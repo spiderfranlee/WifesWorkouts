@@ -1,0 +1,5 @@
+{
+  "name": "FitTrack",
+  "description": "A mobile-friendly fitness tracking app with a workout creator and logger.",
+  "requestFramePermissions": []
+}
