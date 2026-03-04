@@ -3,297 +3,315 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FitTrack</title>
+    <title>FitTrack Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background-color: #fafafa;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .tab-active { color: #059669; }
-        .tab-inactive { color: #a1a1aa; }
+        body { background-color: #222222; color: #e5e5e5; font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .bg-card { background-color: #333333; }
+        .bg-input { background-color: #1a1a1a; }
+        .border-subtle { border-color: #444444; }
+        .text-subtle { color: #a3a3a3; }
+        .tab-active { color: #3b82f6; border-bottom: 2px solid #3b82f6; }
+        .tab-inactive { color: #737373; }
         .hidden { display: none !important; }
+        
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #222; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
     </style>
 </head>
-<body class="text-zinc-900 pb-24">
-    <header class="bg-white border-b border-zinc-200 sticky top-0 z-10 shadow-sm">
-        <div class="max-w-md mx-auto px-4 h-14 flex items-center justify-center">
-            <h1 class="text-lg font-bold flex items-center gap-2 tracking-tight">
-                <i class="fas fa-heartbeat text-emerald-600"></i>
-                FitTrack
-            </h1>
+<body class="pb-24">
+    <header class="bg-[#1a1a1a] border-b border-subtle sticky top-0 z-20 shadow-md">
+        <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+            <h1 class="text-lg font-bold text-white tracking-tight">FitTrack Pro</h1>
+            <div class="flex gap-4 h-full">
+                <button id="tab-workouts" class="h-full px-2 tab-active font-medium text-sm transition-colors">Workouts</button>
+                <button id="tab-creator" class="h-full px-2 tab-inactive font-medium text-sm transition-colors">Creator</button>
+            </div>
         </div>
     </header>
 
-    <main class="max-w-md mx-auto p-4" id="app-container">
-        <!-- Creator Tab -->
-        <div id="creator-view" class="space-y-8">
-            <section>
-                <h2 class="text-xl font-bold mb-4 tracking-tight">Workout Creator</h2>
-                <form id="creator-form" class="bg-white p-5 rounded-2xl shadow-sm border border-zinc-100 space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-zinc-500 mb-1.5 uppercase tracking-wider">Exercise Name</label>
-                        <input type="text" id="ex-name" required class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all">
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-zinc-500 mb-1.5 uppercase tracking-wider">Sets</label>
-                            <input type="number" id="ex-sets" min="1" required class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-zinc-500 mb-1.5 uppercase tracking-wider">Reps</label>
-                            <input type="text" id="ex-reps" required class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-zinc-500 mb-1.5 uppercase tracking-wider">Rest Time</label>
-                            <input type="text" id="ex-rest" placeholder="e.g. 60s" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-zinc-500 mb-1.5 uppercase tracking-wider">Set Type</label>
-                            <select id="ex-type" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none">
-                                <option>Single set</option>
-                                <option>Superset</option>
-                                <option>Triset</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 mt-2 shadow-sm">
-                        <i class="fas fa-plus"></i> Add Exercise
+    <main class="max-w-2xl mx-auto p-4" id="app-container">
+        <!-- Workouts List / Logger View -->
+        <div id="workouts-view" class="space-y-6 animate-in fade-in duration-300">
+            <div id="workouts-list" class="space-y-4"></div>
+            
+            <div id="active-workout" class="hidden space-y-4">
+                <div class="flex justify-between items-center mb-4">
+                    <button onclick="closeWorkout()" class="text-sm text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-2">
+                        <i class="fas fa-arrow-left"></i> Back
                     </button>
-                </form>
-            </section>
-
-            <section id="routine-section" class="hidden">
-                <h3 class="text-sm font-bold text-zinc-900 mb-3 uppercase tracking-wider">Your Routine</h3>
-                <div id="routine-list" class="space-y-3"></div>
-            </section>
+                    <button onclick="deleteActiveWorkout()" class="text-sm text-red-400 hover:text-red-300 transition-colors">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+                <div id="workout-display"></div>
+            </div>
         </div>
 
-        <!-- Logger Tab -->
-        <div id="logger-view" class="space-y-6 hidden">
-            <div class="flex items-center justify-between">
-                <h2 class="text-xl font-bold tracking-tight">Workout Logger</h2>
-                <button id="finish-workout-btn" class="hidden text-sm bg-zinc-900 text-white px-5 py-2 rounded-full font-semibold hover:bg-zinc-800 transition-colors flex items-center gap-1.5 shadow-sm">
-                    <i class="fas fa-check-circle"></i> Finish
+        <!-- Creator View -->
+        <div id="creator-view" class="hidden space-y-4 animate-in fade-in duration-300">
+            <input type="text" id="c-title" placeholder="Workout Title (e.g. Full-Body Balance)" class="w-full bg-transparent text-xl font-bold text-white placeholder-gray-500 focus:outline-none border-b border-subtle pb-2">
+            
+            <textarea id="c-notes" placeholder="Coach's Notes / Warmup..." class="w-full bg-transparent text-sm text-subtle placeholder-gray-600 focus:outline-none resize-none h-24 pt-2"></textarea>
+            
+            <div id="c-exercises" class="space-y-4 mt-4"></div>
+            
+            <div class="flex gap-2 mt-4">
+                <button onclick="addCreatorExercise()" class="flex-1 bg-card border border-subtle hover:bg-[#444] text-white py-3 rounded text-sm font-medium transition-colors shadow-sm">
+                    + Exercise
                 </button>
             </div>
 
-            <div id="empty-logger" class="text-center py-16 text-zinc-500 bg-white rounded-3xl border border-zinc-100 shadow-sm">
-                <i class="fas fa-dumbbell text-4xl mb-4 text-zinc-300"></i>
-                <p class="font-medium text-zinc-900">No exercises yet</p>
-                <p class="text-sm mt-1">Go to the Creator tab to add some.</p>
+            <textarea id="c-cooldown" placeholder="Add cooldown..." class="w-full bg-transparent text-sm text-subtle placeholder-gray-600 focus:outline-none resize-none h-16 mt-6 border-b border-subtle pt-2"></textarea>
+            
+            <div class="flex gap-3 mt-8">
+                <button onclick="saveWorkout()" class="flex-1 bg-[#3b82f6] hover:bg-blue-600 text-white py-3 rounded text-sm font-medium transition-colors shadow-sm">Save Workout</button>
+                <button onclick="clearCreator()" class="bg-card border border-subtle hover:bg-[#444] text-white px-6 py-3 rounded text-sm font-medium transition-colors">Clear</button>
             </div>
-
-            <div id="logger-list" class="space-y-6"></div>
         </div>
     </main>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.02)] z-20">
-        <div class="max-w-md mx-auto flex">
-            <button id="tab-creator" class="flex-1 py-3.5 flex flex-col items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors tab-active">
-                <i class="fas fa-list text-lg"></i> Creator
-            </button>
-            <button id="tab-logger" class="flex-1 py-3.5 flex flex-col items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors tab-inactive">
-                <i class="fas fa-dumbbell text-lg"></i> Logger
-            </button>
-        </div>
-    </nav>
-
     <script>
         // State
-        let exercises = JSON.parse(localStorage.getItem('fit_exercises_vanilla')) || [];
-        let sessionData = JSON.parse(localStorage.getItem('fit_session_vanilla')) || {};
-        let logs = JSON.parse(localStorage.getItem('fit_logs_vanilla')) || {};
+        let workouts = JSON.parse(localStorage.getItem('fit_workouts_v2')) || [];
+        let creatorExercises = [];
+        let activeWorkoutId = null;
 
         // DOM Elements
-        const creatorView = document.getElementById('creator-view');
-        const loggerView = document.getElementById('logger-view');
+        const viewWorkouts = document.getElementById('workouts-view');
+        const viewCreator = document.getElementById('creator-view');
+        const tabWorkouts = document.getElementById('tab-workouts');
         const tabCreator = document.getElementById('tab-creator');
-        const tabLogger = document.getElementById('tab-logger');
-        
-        const creatorForm = document.getElementById('creator-form');
-        const routineSection = document.getElementById('routine-section');
-        const routineList = document.getElementById('routine-list');
-        
-        const emptyLogger = document.getElementById('empty-logger');
-        const loggerList = document.getElementById('logger-list');
-        const finishWorkoutBtn = document.getElementById('finish-workout-btn');
+        const listWorkouts = document.getElementById('workouts-list');
+        const activeWorkoutContainer = document.getElementById('active-workout');
+        const workoutDisplay = document.getElementById('workout-display');
+        const cExercises = document.getElementById('c-exercises');
 
-        // Save state
-        function saveState() {
-            localStorage.setItem('fit_exercises_vanilla', JSON.stringify(exercises));
-            localStorage.setItem('fit_session_vanilla', JSON.stringify(sessionData));
-            localStorage.setItem('fit_logs_vanilla', JSON.stringify(logs));
-        }
+        // Tab Switching
+        tabWorkouts.onclick = () => switchTab('workouts');
+        tabCreator.onclick = () => switchTab('creator');
 
-        // Generate UUID
-        function uuidv4() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        }
-
-        // Tabs
-        tabCreator.addEventListener('click', () => {
-            creatorView.classList.remove('hidden');
-            loggerView.classList.add('hidden');
-            tabCreator.classList.replace('tab-inactive', 'tab-active');
-            tabLogger.classList.replace('tab-active', 'tab-inactive');
-            renderCreator();
-        });
-
-        tabLogger.addEventListener('click', () => {
-            creatorView.classList.add('hidden');
-            loggerView.classList.remove('hidden');
-            tabCreator.classList.replace('tab-active', 'tab-inactive');
-            tabLogger.classList.replace('tab-inactive', 'tab-active');
-            renderLogger();
-        });
-
-        // Add Exercise
-        creatorForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const name = document.getElementById('ex-name').value;
-            const sets = parseInt(document.getElementById('ex-sets').value, 10);
-            const reps = document.getElementById('ex-reps').value;
-            const rest = document.getElementById('ex-rest').value;
-            const type = document.getElementById('ex-type').value;
-
-            const newEx = { id: uuidv4(), name, sets, reps, restTime: rest, setType: type };
-            exercises.push(newEx);
-            saveState();
-            
-            creatorForm.reset();
-            document.getElementById('ex-type').value = 'Single set';
-            renderCreator();
-        });
-
-        // Delete Exercise
-        window.deleteExercise = function(id) {
-            exercises = exercises.filter(ex => ex.id !== id);
-            delete sessionData[id];
-            saveState();
-            renderCreator();
-            renderLogger();
-        }
-
-        // Render Creator
-        function renderCreator() {
-            if (exercises.length === 0) {
-                routineSection.classList.add('hidden');
-                return;
+        function switchTab(tab) {
+            if (tab === 'workouts') {
+                viewWorkouts.classList.remove('hidden');
+                viewCreator.classList.add('hidden');
+                tabWorkouts.classList.replace('tab-inactive', 'tab-active');
+                tabCreator.classList.replace('tab-active', 'tab-inactive');
+                renderWorkoutsList();
+            } else {
+                viewWorkouts.classList.add('hidden');
+                viewCreator.classList.remove('hidden');
+                tabWorkouts.classList.replace('tab-active', 'tab-inactive');
+                tabCreator.classList.replace('tab-inactive', 'tab-active');
+                if(creatorExercises.length === 0) addCreatorExercise();
             }
-            
-            routineSection.classList.remove('hidden');
-            routineList.innerHTML = exercises.map(ex => `
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-zinc-100 flex justify-between items-center">
-                    <div>
-                        <h4 class="font-semibold text-zinc-900">${ex.name}</h4>
-                        <p class="text-xs text-zinc-500 mt-1 font-medium">
-                            ${ex.sets} sets × ${ex.reps} reps • ${ex.setType} ${ex.restTime ? `• ${ex.restTime} rest` : ''}
-                        </p>
+        }
+
+        function uuid() { return Math.random().toString(36).substr(2, 9); }
+
+        // --- Creator Logic ---
+        function addCreatorExercise() {
+            creatorExercises.push({ id: uuid(), label: '', name: '', prescription: '' });
+            renderCreatorExercises();
+        }
+
+        function removeCreatorExercise(id) {
+            creatorExercises = creatorExercises.filter(e => e.id !== id);
+            renderCreatorExercises();
+        }
+
+        function updateCreatorExercise(id, field, value) {
+            const ex = creatorExercises.find(e => e.id === id);
+            if (ex) ex[field] = value;
+        }
+
+        function renderCreatorExercises() {
+            cExercises.innerHTML = creatorExercises.map((ex, index) => `
+                <div class="bg-card border border-subtle rounded p-3 relative shadow-sm">
+                    <button onclick="removeCreatorExercise('${ex.id}')" class="absolute top-2 right-2 text-gray-500 hover:text-red-400 p-1 transition-colors"><i class="fas fa-times"></i></button>
+                    <div class="flex gap-3 mb-3 pr-8">
+                        <input type="text" placeholder="A1" value="${ex.label}" oninput="updateCreatorExercise('${ex.id}', 'label', this.value)" class="w-16 bg-input border border-subtle rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors">
+                        <input type="text" placeholder="Exercise Name" value="${ex.name}" oninput="updateCreatorExercise('${ex.id}', 'name', this.value)" class="flex-1 bg-input border border-subtle rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors">
                     </div>
-                    <button onclick="deleteExercise('${ex.id}')" class="text-zinc-300 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <textarea placeholder="Prescription (e.g. 12 reps x 3 sets; 70% 1RM, Triset)" oninput="updateCreatorExercise('${ex.id}', 'prescription', this.value)" class="w-full bg-input border border-subtle rounded px-3 py-2 text-sm text-subtle focus:outline-none focus:border-blue-500 resize-none h-16 transition-colors">${ex.prescription}</textarea>
                 </div>
             `).join('');
         }
 
-        // Render Logger
-        function renderLogger() {
-            if (exercises.length === 0) {
-                emptyLogger.classList.remove('hidden');
-                loggerList.classList.add('hidden');
-                finishWorkoutBtn.classList.add('hidden');
+        function saveWorkout() {
+            const title = document.getElementById('c-title').value.trim() || 'Untitled Workout';
+            const notes = document.getElementById('c-notes').value.trim();
+            const cooldown = document.getElementById('c-cooldown').value.trim();
+            
+            // Filter out empty exercises
+            const validExercises = creatorExercises.filter(ex => ex.name.trim() !== '' || ex.prescription.trim() !== '');
+            
+            if (validExercises.length === 0 && !notes && !cooldown) {
+                alert('Please add some content to your workout before saving.');
                 return;
             }
 
-            emptyLogger.classList.add('hidden');
-            loggerList.classList.remove('hidden');
-            finishWorkoutBtn.classList.remove('hidden');
+            const workout = {
+                id: uuid(),
+                date: new Date().toISOString(),
+                title,
+                notes,
+                cooldown,
+                exercises: JSON.parse(JSON.stringify(validExercises)),
+                results: {} // Store results by exercise id
+            };
 
-            loggerList.innerHTML = exercises.map(ex => {
-                const exData = sessionData[ex.id] || [];
-                
-                let setsHtml = '';
-                for (let i = 0; i < ex.sets; i++) {
-                    const weight = exData[i]?.weight || '';
-                    const reps = exData[i]?.reps || '';
-                    setsHtml += `
-                        <div class="grid grid-cols-[auto_1fr_1fr] gap-3 items-center">
-                            <div class="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-600">
-                                ${i + 1}
-                            </div>
-                            <input type="number" placeholder="0" value="${weight}" oninput="updateSession('${ex.id}', ${i}, 'weight', this.value)" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2.5 text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all">
-                            <input type="number" placeholder="0" value="${reps}" oninput="updateSession('${ex.id}', ${i}, 'reps', this.value)" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2.5 text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all">
-                        </div>
-                    `;
-                }
-
-                return `
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-zinc-100">
-                        <div class="mb-5">
-                            <h3 class="font-bold text-zinc-900 text-lg">${ex.name}</h3>
-                            <p class="text-xs font-medium text-zinc-500 mt-0.5">Target: ${ex.sets} sets × ${ex.reps} reps</p>
-                        </div>
-                        <div class="space-y-3">
-                            <div class="grid grid-cols-[auto_1fr_1fr] gap-3 px-1">
-                                <div class="text-[10px] font-bold text-zinc-400 w-8 text-center uppercase tracking-wider">Set</div>
-                                <div class="text-[10px] font-bold text-zinc-400 text-center uppercase tracking-wider">Weight</div>
-                                <div class="text-[10px] font-bold text-zinc-400 text-center uppercase tracking-wider">Reps</div>
-                            </div>
-                            ${setsHtml}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            workouts.unshift(workout);
+            localStorage.setItem('fit_workouts_v2', JSON.stringify(workouts));
+            
+            clearCreator();
+            switchTab('workouts');
         }
 
-        // Update Session
-        window.updateSession = function(exId, setIndex, field, value) {
-            if (!sessionData[exId]) sessionData[exId] = [];
-            while (sessionData[exId].length <= setIndex) {
-                sessionData[exId].push({ weight: '', reps: '' });
-            }
-            sessionData[exId][setIndex][field] = value;
-            saveState();
-        };
+        function clearCreator() {
+            document.getElementById('c-title').value = '';
+            document.getElementById('c-notes').value = '';
+            document.getElementById('c-cooldown').value = '';
+            creatorExercises = [];
+            renderCreatorExercises();
+        }
 
-        // Finish Workout
-        finishWorkoutBtn.addEventListener('click', () => {
-            if (Object.keys(sessionData).length === 0) {
-                alert('No data to save!');
+        // --- Workouts List & Logger Logic ---
+        function renderWorkoutsList() {
+            activeWorkoutContainer.classList.add('hidden');
+            listWorkouts.classList.remove('hidden');
+
+            if (workouts.length === 0) {
+                listWorkouts.innerHTML = `
+                    <div class="text-center py-16 bg-card border border-subtle rounded-lg shadow-sm">
+                        <i class="fas fa-clipboard-list text-4xl text-[#444] mb-4"></i>
+                        <p class="text-white font-medium">No workouts yet</p>
+                        <p class="text-sm text-subtle mt-1">Go to the Creator tab to build one.</p>
+                    </div>`;
                 return;
             }
 
-            const date = new Date().toISOString();
-            Object.keys(sessionData).forEach(exId => {
-                if (!logs[exId]) logs[exId] = [];
-                logs[exId].push({
-                    id: uuidv4(),
-                    date,
-                    exerciseId: exId,
-                    sets: sessionData[exId]
-                });
+            listWorkouts.innerHTML = workouts.map(w => `
+                <div class="bg-card border border-subtle rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors shadow-sm" onclick="openWorkout('${w.id}')">
+                    <h3 class="font-bold text-white text-lg">${w.title}</h3>
+                    <p class="text-xs text-subtle mt-1.5 flex items-center gap-2">
+                        <i class="far fa-calendar-alt"></i> ${new Date(w.date).toLocaleDateString()} 
+                        <span>•</span> 
+                        <i class="fas fa-dumbbell"></i> ${w.exercises.length} exercises
+                    </p>
+                </div>
+            `).join('');
+        }
+
+        function deleteActiveWorkout() {
+            if(confirm('Are you sure you want to delete this workout?')) {
+                workouts = workouts.filter(w => w.id !== activeWorkoutId);
+                localStorage.setItem('fit_workouts_v2', JSON.stringify(workouts));
+                closeWorkout();
+            }
+        }
+
+        function openWorkout(id) {
+            activeWorkoutId = id;
+            listWorkouts.classList.add('hidden');
+            activeWorkoutContainer.classList.remove('hidden');
+            renderActiveWorkout();
+        }
+
+        function closeWorkout() {
+            activeWorkoutId = null;
+            renderWorkoutsList();
+        }
+
+        function updateResult(exId, inputEl) {
+            const w = workouts.find(w => w.id === activeWorkoutId);
+            if (w) {
+                w.results[exId] = inputEl.value;
+                localStorage.setItem('fit_workouts_v2', JSON.stringify(workouts));
+                
+                // Update icon dynamically without re-rendering the whole view
+                const icon = inputEl.nextElementSibling;
+                if (inputEl.value.trim().length > 0) {
+                    icon.className = 'fas fa-check-circle text-green-500 absolute right-3 top-3 text-sm';
+                } else {
+                    icon.className = 'fas fa-times-circle text-red-500 absolute right-3 top-3 text-sm';
+                }
+            }
+        }
+
+        function renderActiveWorkout() {
+            const w = workouts.find(w => w.id === activeWorkoutId);
+            if (!w) return;
+
+            let html = `
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-white mb-3 tracking-tight">${w.title}</h2>
+                    ${w.notes ? `
+                        <div class="text-sm text-subtle whitespace-pre-wrap mb-4 leading-relaxed">
+                            <span class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Coach's Notes / Warmup</span>
+                            ${w.notes}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            w.exercises.forEach((ex, i) => {
+                const nextEx = w.exercises[i + 1];
+                // Check if linked (same first letter in label, e.g. A1 and A2)
+                const isLinked = nextEx && ex.label && nextEx.label && 
+                                 ex.label.charAt(0).toUpperCase() === nextEx.label.charAt(0).toUpperCase();
+                
+                const resultVal = w.results[ex.id] || '';
+                const hasResult = resultVal.trim().length > 0;
+                const iconClass = hasResult ? 'fa-check-circle text-green-500' : 'fa-times-circle text-red-500';
+
+                html += `
+                    <div class="relative mb-${isLinked ? '6' : '3'}">
+                        <div class="bg-card border border-subtle rounded-md p-3 shadow-sm">
+                            <div class="flex justify-between items-start">
+                                <h3 class="font-bold text-white text-sm leading-tight pr-4">
+                                    ${ex.label ? `<span class="text-gray-400 mr-1">${ex.label})</span>` : ''}${ex.name}
+                                </h3>
+                                <div class="flex gap-3 text-gray-500 text-sm shrink-0">
+                                    <i class="fas fa-history cursor-pointer hover:text-white transition-colors" title="History"></i>
+                                    <i class="fas fa-video cursor-pointer hover:text-white transition-colors" title="Demo Video"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-subtle mt-2 mb-3 leading-relaxed">${ex.prescription}</p>
+                            <div class="relative">
+                                <input type="text" placeholder="Add Results..." value="${resultVal}" oninput="updateResult('${ex.id}', this)" class="w-full bg-input border border-subtle rounded px-3 py-2.5 text-sm text-white focus:outline-none focus:border-gray-500 transition-colors pr-10">
+                                <i class="fas ${iconClass} absolute right-3 top-3 text-sm transition-colors"></i>
+                            </div>
+                        </div>
+                        ${isLinked ? `
+                        <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+                            <div class="w-6 h-6 rounded-full bg-[#444] flex items-center justify-center border-2 border-[#222] shadow-sm">
+                                <i class="fas fa-link text-[10px] text-gray-400"></i>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
             });
-            
-            sessionData = {};
-            saveState();
-            renderLogger();
-            alert('Workout saved successfully!');
-        });
+
+            if (w.cooldown) {
+                html += `
+                    <div class="mt-8 pt-6 border-t border-subtle">
+                        <span class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Cooldown</span>
+                        <div class="text-sm text-subtle whitespace-pre-wrap leading-relaxed">${w.cooldown}</div>
+                    </div>
+                `;
+            }
+
+            workoutDisplay.innerHTML = html;
+        }
 
         // Init
-        renderCreator();
+        renderWorkoutsList();
     </script>
 </body>
 </html>
