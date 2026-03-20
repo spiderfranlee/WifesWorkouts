@@ -1,5 +1,17 @@
 {
   "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user profile.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "lastLogin": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
     "Workout": {
       "title": "Workout",
       "description": "A user's workout session, including exercises and results.",
@@ -49,6 +61,12 @@
     }
   },
   "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "User profiles."
+    },
     "/users/{userId}/workouts/{workoutId}": {
       "schema": {
         "$ref": "#/entities/Workout"
