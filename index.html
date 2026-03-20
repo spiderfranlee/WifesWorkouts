@@ -27,7 +27,8 @@
     <header class="bg-[#1a1a1a] border-b border-subtle sticky top-0 z-20 shadow-md">
         <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
             <h1 class="text-lg font-bold text-white tracking-tight">FitTrack Pro</h1>
-            <div class="flex gap-4 h-full">
+            <div class="flex gap-4 h-full items-center">
+                <div id="auth-container" class="mr-2"></div>
                 <button id="tab-workouts" class="h-full px-2 tab-active font-medium text-sm transition-colors">Workouts</button>
                 <button id="tab-creator" class="h-full px-2 tab-inactive font-medium text-sm transition-colors">Creator</button>
             </div>
@@ -75,11 +76,32 @@
         </div>
     </main>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            projectId: "gen-lang-client-0185754107",
+            appId: "1:59383295522:web:259817bf82543d517f647b",
+            apiKey: "AIzaSyB-P8uckA9iBI0K2g-94Lq2qjKBkdztw2M",
+            authDomain: "gen-lang-client-0185754107.firebaseapp.com",
+            firestoreDatabaseId: "ai-studio-7fb697f5-481e-4447-8260-cfb1bcf0dc13",
+            storageBucket: "gen-lang-client-0185754107.firebasestorage.app",
+            messagingSenderId: "59383295522",
+            measurementId: ""
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+
         // State
-        let workouts = JSON.parse(localStorage.getItem('fit_workouts_v2')) || [];
+        let workouts = [];
         let creatorExercises = [];
         let activeWorkoutId = null;
+        let currentUser = null;
+        let unsubscribeWorkouts = null;
 
         // DOM Elements
         const viewWorkouts = document.getElementById('workouts-view');
@@ -90,12 +112,74 @@
         const activeWorkoutContainer = document.getElementById('active-workout');
         const workoutDisplay = document.getElementById('workout-display');
         const cExercises = document.getElementById('c-exercises');
+        const authContainer = document.getElementById('auth-container');
+
+        // Auth Logic
+        window.login = async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Login failed", error);
+                alert("Login failed: " + error.message);
+            }
+        };
+
+        window.logout = async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Logout failed", error);
+            }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                authContainer.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <img src="${user.photoURL}" alt="Profile" class="w-6 h-6 rounded-full" referrerpolicy="no-referrer">
+                        <button onclick="logout()" class="text-xs text-gray-400 hover:text-white transition-colors">Logout</button>
+                    </div>
+                `;
+                subscribeToWorkouts();
+            } else {
+                authContainer.innerHTML = `
+                    <button onclick="login()" class="text-sm bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded transition-colors">Login</button>
+                `;
+                if (unsubscribeWorkouts) {
+                    unsubscribeWorkouts();
+                    unsubscribeWorkouts = null;
+                }
+                workouts = [];
+                renderWorkoutsList();
+                if (activeWorkoutId) closeWorkout();
+            }
+        });
+
+        function subscribeToWorkouts() {
+            if (!currentUser) return;
+            const q = query(collection(db, 'users', currentUser.uid, 'workouts'), orderBy('date', 'desc'));
+            unsubscribeWorkouts = onSnapshot(q, (snapshot) => {
+                workouts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (activeWorkoutId) {
+                    // If the active workout was deleted, close it
+                    if (!workouts.find(w => w.id === activeWorkoutId)) {
+                        closeWorkout();
+                    } else {
+                        renderActiveWorkout();
+                    }
+                } else {
+                    renderWorkoutsList();
+                }
+            }, (error) => {
+                console.error("Error fetching workouts:", error);
+                alert("Error fetching workouts: " + error.message);
+            });
+        }
 
         // Tab Switching
-        tabWorkouts.onclick = () => switchTab('workouts');
-        tabCreator.onclick = () => switchTab('creator');
-
-        function switchTab(tab) {
+        window.switchTab = (tab) => {
             if (tab === 'workouts') {
                 viewWorkouts.classList.remove('hidden');
                 viewCreator.classList.add('hidden');
@@ -103,31 +187,38 @@
                 tabCreator.classList.replace('tab-active', 'tab-inactive');
                 renderWorkoutsList();
             } else {
+                if (!currentUser) {
+                    alert("Please login to create workouts.");
+                    return;
+                }
                 viewWorkouts.classList.add('hidden');
                 viewCreator.classList.remove('hidden');
                 tabWorkouts.classList.replace('tab-active', 'tab-inactive');
                 tabCreator.classList.replace('tab-inactive', 'tab-active');
                 if(creatorExercises.length === 0) addCreatorExercise();
             }
-        }
+        };
+
+        tabWorkouts.onclick = () => switchTab('workouts');
+        tabCreator.onclick = () => switchTab('creator');
 
         function uuid() { return Math.random().toString(36).substr(2, 9); }
 
         // --- Creator Logic ---
-        function addCreatorExercise() {
+        window.addCreatorExercise = () => {
             creatorExercises.push({ id: uuid(), label: '', name: '', prescription: '' });
             renderCreatorExercises();
-        }
+        };
 
-        function removeCreatorExercise(id) {
+        window.removeCreatorExercise = (id) => {
             creatorExercises = creatorExercises.filter(e => e.id !== id);
             renderCreatorExercises();
-        }
+        };
 
-        function updateCreatorExercise(id, field, value) {
+        window.updateCreatorExercise = (id, field, value) => {
             const ex = creatorExercises.find(e => e.id === id);
             if (ex) ex[field] = value;
-        }
+        };
 
         function renderCreatorExercises() {
             cExercises.innerHTML = creatorExercises.map((ex, index) => `
@@ -142,7 +233,8 @@
             `).join('');
         }
 
-        function saveWorkout() {
+        window.saveWorkout = async () => {
+            if (!currentUser) return;
             const title = document.getElementById('c-title').value.trim() || 'Untitled Workout';
             const notes = document.getElementById('c-notes').value.trim();
             const cooldown = document.getElementById('c-cooldown').value.trim();
@@ -155,35 +247,49 @@
                 return;
             }
 
+            const workoutId = uuid();
             const workout = {
-                id: uuid(),
+                userId: currentUser.uid,
                 date: new Date().toISOString(),
                 title,
                 notes,
                 cooldown,
                 exercises: JSON.parse(JSON.stringify(validExercises)),
-                results: {} // Store results by exercise id
+                results: {}
             };
 
-            workouts.unshift(workout);
-            localStorage.setItem('fit_workouts_v2', JSON.stringify(workouts));
-            
-            clearCreator();
-            switchTab('workouts');
-        }
+            try {
+                await setDoc(doc(db, 'users', currentUser.uid, 'workouts', workoutId), workout);
+                clearCreator();
+                switchTab('workouts');
+            } catch (error) {
+                console.error("Error saving workout:", error);
+                alert("Failed to save workout: " + error.message);
+            }
+        };
 
-        function clearCreator() {
+        window.clearCreator = () => {
             document.getElementById('c-title').value = '';
             document.getElementById('c-notes').value = '';
             document.getElementById('c-cooldown').value = '';
             creatorExercises = [];
             renderCreatorExercises();
-        }
+        };
 
         // --- Workouts List & Logger Logic ---
         function renderWorkoutsList() {
             activeWorkoutContainer.classList.add('hidden');
             listWorkouts.classList.remove('hidden');
+
+            if (!currentUser) {
+                listWorkouts.innerHTML = `
+                    <div class="text-center py-16 bg-card border border-subtle rounded-lg shadow-sm">
+                        <i class="fas fa-lock text-4xl text-[#444] mb-4"></i>
+                        <p class="text-white font-medium">Please login</p>
+                        <p class="text-sm text-subtle mt-1">Sign in to view and create workouts.</p>
+                    </div>`;
+                return;
+            }
 
             if (workouts.length === 0) {
                 listWorkouts.innerHTML = `
@@ -207,57 +313,74 @@
             `).join('');
         }
 
-        function deleteActiveWorkout() {
+        window.deleteActiveWorkout = async () => {
+            if (!currentUser || !activeWorkoutId) return;
             if(confirm('Are you sure you want to delete this workout?')) {
-                workouts = workouts.filter(w => w.id !== activeWorkoutId);
-                localStorage.setItem('fit_workouts_v2', JSON.stringify(workouts));
-                closeWorkout();
+                try {
+                    await deleteDoc(doc(db, 'users', currentUser.uid, 'workouts', activeWorkoutId));
+                    // onSnapshot will handle closing the workout
+                } catch (error) {
+                    console.error("Error deleting workout:", error);
+                    alert("Failed to delete workout: " + error.message);
+                }
             }
-        }
+        };
 
-        function openWorkout(id) {
+        window.openWorkout = (id) => {
             activeWorkoutId = id;
             listWorkouts.classList.add('hidden');
             activeWorkoutContainer.classList.remove('hidden');
             renderActiveWorkout();
-        }
+        };
 
-        function closeWorkout() {
+        window.closeWorkout = () => {
             activeWorkoutId = null;
             renderWorkoutsList();
-        }
+        };
 
-        function updateResult(exId, inputEl) {
+        window.updateResult = async (exId, inputEl) => {
+            if (!currentUser || !activeWorkoutId) return;
             const w = workouts.find(w => w.id === activeWorkoutId);
             if (w) {
-                w.results[exId] = inputEl.value;
-                localStorage.setItem('fit_workouts_v2', JSON.stringify(workouts));
-                
-                // Update icon dynamically without re-rendering the whole view
+                // Optimistic UI update
                 const icon = inputEl.nextElementSibling;
                 if (inputEl.value.trim().length > 0) {
                     icon.className = 'fas fa-check-circle text-green-500 absolute right-3 top-3 text-sm';
                 } else {
                     icon.className = 'fas fa-times-circle text-red-500 absolute right-3 top-3 text-sm';
                 }
+
+                // Update Firestore
+                const updatedResults = { ...w.results, [exId]: inputEl.value };
+                try {
+                    await setDoc(doc(db, 'users', currentUser.uid, 'workouts', activeWorkoutId), { results: updatedResults }, { merge: true });
+                } catch (error) {
+                    console.error("Error updating result:", error);
+                    // Revert icon on error
+                    if (w.results[exId]?.trim().length > 0) {
+                        icon.className = 'fas fa-check-circle text-green-500 absolute right-3 top-3 text-sm';
+                    } else {
+                        icon.className = 'fas fa-times-circle text-red-500 absolute right-3 top-3 text-sm';
+                    }
+                }
             }
-        }
+        };
 
         function renderActiveWorkout() {
             const w = workouts.find(w => w.id === activeWorkoutId);
             if (!w) return;
 
-            let html = `
+            let html = \`
                 <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-white mb-3 tracking-tight">${w.title}</h2>
-                    ${w.notes ? `
+                    <h2 class="text-2xl font-bold text-white mb-3 tracking-tight">\${w.title}</h2>
+                    \${w.notes ? \`
                         <div class="text-sm text-subtle whitespace-pre-wrap mb-4 leading-relaxed">
                             <span class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Coach's Notes / Warmup</span>
-                            ${w.notes}
+                            \${w.notes}
                         </div>
-                    ` : ''}
+                    \` : ''}
                 </div>
-            `;
+            \`;
 
             w.exercises.forEach((ex, i) => {
                 const nextEx = w.exercises[i + 1];
@@ -269,42 +392,41 @@
                 const hasResult = resultVal.trim().length > 0;
                 const iconClass = hasResult ? 'fa-check-circle text-green-500' : 'fa-times-circle text-red-500';
 
-                html += `
-                    <div class="relative mb-${isLinked ? '6' : '3'}">
+                html += \`
+                    <div class="relative mb-\${isLinked ? '6' : '3'}">
                         <div class="bg-card border border-subtle rounded-md p-3 shadow-sm">
                             <div class="flex justify-between items-start">
                                 <h3 class="font-bold text-white text-sm leading-tight pr-4">
-                                    ${ex.label ? `<span class="text-gray-400 mr-1">${ex.label})</span>` : ''}${ex.name}
+                                    \${ex.label ? \`<span class="text-gray-400 mr-1">\${ex.label})</span>\` : ''}\${ex.name}
                                 </h3>
                                 <div class="flex gap-3 text-gray-500 text-sm shrink-0">
                                     <i class="fas fa-history cursor-pointer hover:text-white transition-colors" title="History"></i>
-                                    <i class="fas fa-video cursor-pointer hover:text-white transition-colors" title="Demo Video"></i>
                                 </div>
                             </div>
-                            <p class="text-xs text-subtle mt-2 mb-3 leading-relaxed">${ex.prescription}</p>
+                            <p class="text-xs text-subtle mt-2 mb-3 leading-relaxed">\${ex.prescription}</p>
                             <div class="relative">
-                                <input type="text" placeholder="Add Results..." value="${resultVal}" oninput="updateResult('${ex.id}', this)" class="w-full bg-input border border-subtle rounded px-3 py-2.5 text-sm text-white focus:outline-none focus:border-gray-500 transition-colors pr-10">
-                                <i class="fas ${iconClass} absolute right-3 top-3 text-sm transition-colors"></i>
+                                <input type="text" placeholder="Add Results..." value="\${resultVal}" oninput="updateResult('\${ex.id}', this)" class="w-full bg-input border border-subtle rounded px-3 py-2.5 text-sm text-white focus:outline-none focus:border-gray-500 transition-colors pr-10">
+                                <i class="fas \${iconClass} absolute right-3 top-3 text-sm transition-colors"></i>
                             </div>
                         </div>
-                        ${isLinked ? `
+                        \${isLinked ? \`
                         <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 z-10">
                             <div class="w-6 h-6 rounded-full bg-[#444] flex items-center justify-center border-2 border-[#222] shadow-sm">
                                 <i class="fas fa-link text-[10px] text-gray-400"></i>
                             </div>
                         </div>
-                        ` : ''}
+                        \` : ''}
                     </div>
-                `;
+                \`;
             });
 
             if (w.cooldown) {
-                html += `
+                html += \`
                     <div class="mt-8 pt-6 border-t border-subtle">
                         <span class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Cooldown</span>
-                        <div class="text-sm text-subtle whitespace-pre-wrap leading-relaxed">${w.cooldown}</div>
+                        <div class="text-sm text-subtle whitespace-pre-wrap leading-relaxed">\${w.cooldown}</div>
                     </div>
-                `;
+                \`;
             }
 
             workoutDisplay.innerHTML = html;

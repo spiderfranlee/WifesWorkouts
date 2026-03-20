@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "Workout": {
+      "title": "Workout",
+      "description": "A user's workout session, including exercises and results.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this workout."
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time the workout was created."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the workout."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Coach's notes or warmup instructions."
+        },
+        "cooldown": {
+          "type": "string",
+          "description": "Cooldown instructions."
+        },
+        "exercises": {
+          "type": "array",
+          "description": "List of exercises in the workout.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "label": { "type": "string" },
+              "name": { "type": "string" },
+              "prescription": { "type": "string" }
+            },
+            "required": ["id", "name"]
+          }
+        },
+        "results": {
+          "type": "object",
+          "description": "Map of exercise IDs to their results (e.g., weight/reps)."
+        }
+      },
+      "required": ["userId", "date", "title", "exercises", "results"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/workouts/{workoutId}": {
+      "schema": {
+        "$ref": "#/entities/Workout"
+      },
+      "description": "Workouts belonging to a specific user."
+    }
+  }
+}
