@@ -6,22 +6,23 @@
     <title>FitTrack Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background-color: #222222; color: #e5e5e5; font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
-        .bg-card { background-color: #333333; }
-        .bg-input { background-color: #1a1a1a; }
-        .border-subtle { border-color: #444444; }
-        .text-subtle { color: #a3a3a3; }
-        .tab-active { color: #3b82f6; border-bottom: 2px solid #3b82f6; }
-        .tab-inactive { color: #737373; }
+        body { background-color: #0a0510; color: #f4f0fa; font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .bg-card { background-color: #1a0f2e; }
+        .bg-input { background-color: #0f081c; }
+        .border-subtle { border-color: #3d2b5e; }
+        .text-subtle { color: #a79eb5; }
+        .tab-active { color: #d4af37; border-bottom: 2px solid #d4af37; }
+        .tab-inactive { color: #7e6b9c; }
         .hidden { display: none !important; }
         
         /* Custom scrollbar for dark theme */
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #222; }
-        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        ::-webkit-scrollbar-track { background: #0a0510; }
+        ::-webkit-scrollbar-thumb { background: #3d2b5e; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5a408a; }
 
         /* Markdown styles */
         .markdown-body p { margin-bottom: 0.5em; }
@@ -32,7 +33,7 @@
     </style>
 </head>
 <body class="pb-24">
-    <header class="bg-[#1a1a1a] border-b border-subtle sticky top-0 z-20 shadow-md">
+    <header class="bg-[#1a0f2e] border-b border-subtle sticky top-0 z-20 shadow-md">
         <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
             <h1 class="text-lg font-bold text-white tracking-tight">FitTrack Pro</h1>
             <div class="flex gap-4 h-full items-center">
@@ -48,7 +49,7 @@
         <div id="workouts-view" class="space-y-6 animate-in fade-in duration-300">
             <div id="admin-client-selector" class="hidden bg-card border border-subtle rounded-lg p-4 shadow-sm">
                 <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">View Client Workouts</label>
-                <select id="w-client-select" onchange="selectClientWorkouts(this.value)" class="w-full bg-input border border-subtle rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors">
+                <select id="w-client-select" onchange="selectClientWorkouts(this.value)" class="w-full bg-input border border-subtle rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors">
                     <option value="">Select a client...</option>
                 </select>
             </div>
@@ -56,39 +57,52 @@
             
             <div id="active-workout" class="hidden space-y-4">
                 <div class="flex justify-between items-center mb-4">
-                    <button onclick="closeWorkout()" class="text-sm text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-2">
+                    <button onclick="closeWorkout()" class="text-sm text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-2">
                         <i class="fas fa-arrow-left"></i> Back
                     </button>
                     <button id="btn-delete-workout" onclick="deleteActiveWorkout()" class="hidden text-sm text-red-400 hover:text-red-300 transition-colors">
                         <i class="fas fa-trash"></i> Delete
                     </button>
                 </div>
+                
+                <!-- Search Bar -->
+                <div class="relative mb-2">
+                    <input type="text" id="exercise-search" placeholder="Search exercises..." oninput="filterExercises(this.value)" class="w-full bg-input border border-subtle rounded-full px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors pl-10">
+                    <i class="fas fa-search absolute left-4 top-3.5 text-gray-500 text-sm"></i>
+                </div>
+
                 <div id="workout-display"></div>
             </div>
         </div>
 
         <!-- Creator View -->
         <div id="creator-view" class="hidden space-y-4 animate-in fade-in duration-300">
-            <select id="c-client-select" class="w-full bg-input border border-subtle rounded px-3 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors shadow-sm">
+            <select id="c-client-select" class="w-full bg-input border border-subtle rounded px-3 py-3 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors shadow-sm">
                 <option value="">Assign to Client...</option>
             </select>
             <input type="text" id="c-title" placeholder="Workout Title (e.g. Full-Body Balance)" class="w-full bg-transparent text-xl font-bold text-white placeholder-gray-500 focus:outline-none border-b border-subtle pb-2">
             
-            <textarea id="c-notes" placeholder="Coach's Notes / Warmup..." class="w-full bg-transparent text-sm text-subtle placeholder-gray-600 focus:outline-none resize-none h-24 pt-2"></textarea>
+            <div class="space-y-3 mt-4">
+                <textarea id="c-warmup" placeholder="Warm-up Instructions..." class="w-full bg-input border border-subtle rounded px-3 py-2 text-sm text-subtle placeholder-gray-600 focus:outline-none focus:border-amber-500 resize-none h-20 transition-colors"></textarea>
+                <textarea id="c-notes" placeholder="General Advice / Coach's Notes..." class="w-full bg-input border border-subtle rounded px-3 py-2 text-sm text-subtle placeholder-gray-600 focus:outline-none focus:border-amber-500 resize-none h-20 transition-colors"></textarea>
+            </div>
             
             <div id="c-exercises" class="space-y-4 mt-4"></div>
             
             <div class="flex gap-2 mt-4">
-                <button onclick="addCreatorExercise()" class="flex-1 bg-card border border-subtle hover:bg-[#444] text-white py-3 rounded text-sm font-medium transition-colors shadow-sm">
+                <button onclick="addCreatorExercise()" class="flex-1 bg-card border border-subtle hover:bg-[#3d2b5e] text-white py-3 rounded text-sm font-medium transition-colors shadow-sm">
                     + Exercise
+                </button>
+                <button onclick="openBulkImport()" class="flex-1 bg-card border border-subtle hover:bg-[#3d2b5e] text-white py-3 rounded text-sm font-medium transition-colors shadow-sm">
+                    <i class="fas fa-file-import mr-2"></i> Bulk Import
                 </button>
             </div>
 
             <textarea id="c-cooldown" placeholder="Add cooldown..." class="w-full bg-transparent text-sm text-subtle placeholder-gray-600 focus:outline-none resize-none h-16 mt-6 border-b border-subtle pt-2"></textarea>
             
             <div class="flex gap-3 mt-8">
-                <button onclick="saveWorkout()" class="flex-1 bg-[#3b82f6] hover:bg-blue-600 text-white py-3 rounded text-sm font-medium transition-colors shadow-sm">Save Workout</button>
-                <button onclick="clearCreator()" class="bg-card border border-subtle hover:bg-[#444] text-white px-6 py-3 rounded text-sm font-medium transition-colors">Clear</button>
+                <button onclick="saveWorkout()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded text-sm font-medium transition-colors shadow-sm">Save Workout</button>
+                <button onclick="clearCreator()" class="bg-card border border-subtle hover:bg-[#3d2b5e] text-white px-6 py-3 rounded text-sm font-medium transition-colors">Clear</button>
             </div>
         </div>
     </main>
@@ -98,40 +112,93 @@
         <!-- Chat Window -->
         <div id="chat-window" class="hidden w-80 sm:w-96 bg-card border border-subtle rounded-lg shadow-xl mb-4 flex flex-col overflow-hidden transition-all duration-300 transform origin-bottom-right">
             <!-- Header -->
-            <div class="bg-[#1a1a1a] border-b border-subtle p-3 flex justify-between items-center">
+            <div class="bg-[#1a0f2e] border-b border-subtle p-3 flex justify-between items-center">
                 <h3 class="text-white font-medium flex items-center gap-2">
-                    <i class="fas fa-robot text-blue-400"></i> AI Coach
+                    <i class="fas fa-robot text-amber-400"></i> AI Coach
                 </h3>
                 <button onclick="toggleChat()" class="text-gray-400 hover:text-white transition-colors">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <!-- Messages -->
-            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto h-80 space-y-4 bg-[#222]">
+            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto h-80 space-y-4 bg-[#0a0510]">
                 <div class="flex gap-2">
-                    <div class="w-8 h-8 rounded-full bg-blue-900 flex items-center justify-center shrink-0 mt-1">
-                        <i class="fas fa-robot text-blue-300 text-xs"></i>
+                    <div class="w-8 h-8 rounded-full bg-[#3d2b5e] flex items-center justify-center shrink-0 mt-1">
+                        <i class="fas fa-robot text-amber-300 text-xs"></i>
                     </div>
-                    <div class="bg-[#333] text-sm text-gray-200 p-3 rounded-lg rounded-tl-none markdown-body">
+                    <div class="bg-[#2d1b4e] text-sm text-gray-200 p-3 rounded-lg rounded-tl-none markdown-body">
                         Hi! I'm your AI Coach. Ask me how to perform any exercise!
                     </div>
                 </div>
             </div>
             <!-- Input -->
-            <div class="p-3 bg-[#1a1a1a] border-t border-subtle flex gap-2">
-                <input type="text" id="chat-input" placeholder="Ask about an exercise..." class="flex-1 bg-input border border-subtle rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors" onkeypress="if(event.key === 'Enter') sendChatMessage()">
-                <button onclick="sendChatMessage()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded transition-colors flex items-center justify-center">
+            <div class="p-3 bg-[#1a0f2e] border-t border-subtle flex gap-2">
+                <input type="text" id="chat-input" placeholder="Ask about an exercise..." class="flex-1 bg-input border border-subtle rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors" onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                <button onclick="sendChatMessage()" class="bg-amber-500 hover:bg-amber-400 text-white px-3 py-2 rounded transition-colors flex items-center justify-center">
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
         </div>
         
         <!-- Floating Button -->
-        <button onclick="toggleChat()" class="w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105">
+        <button onclick="toggleChat()" class="w-14 h-14 bg-amber-500 hover:bg-amber-400 text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105">
             <i class="fas fa-comments text-2xl"></i>
         </button>
     </div>
 
+    <!-- Bulk Import Modal -->
+    <div id="bulk-import-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div class="bg-card border border-subtle w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-subtle flex justify-between items-center bg-[#1a0f2e]">
+                <div>
+                    <h3 class="text-white font-bold text-lg">Bulk Import Exercises</h3>
+                    <p class="text-xs text-subtle">Paste a list of exercises</p>
+                </div>
+                <button onclick="closeBulkImport()" class="text-gray-500 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4 flex-1">
+                <p class="text-xs text-gray-400 mb-3">Format: <code>Label | Name | Prescription</code> (or just paste names)</p>
+                <textarea id="bulk-import-text" class="w-full bg-input border border-subtle rounded p-3 text-sm text-white focus:outline-none focus:border-amber-500 h-48 resize-none" placeholder="A1 | Squats | 3x10&#10;A2 | Lunges | 3x10&#10;Bench Press"></textarea>
+            </div>
+            <div class="p-4 border-t border-subtle flex justify-end gap-3 bg-[#1a0f2e]">
+                <button onclick="closeBulkImport()" class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">Cancel</button>
+                <button onclick="processBulkImport()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-white rounded text-sm font-medium transition-colors">Import</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div class="bg-card border border-subtle w-full max-w-md rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="p-4 border-b border-subtle flex justify-between items-center bg-[#1a0f2e]">
+                <div>
+                    <h3 id="history-title" class="text-white font-bold text-lg">Exercise History</h3>
+                    <p id="history-subtitle" class="text-xs text-subtle">Progress over time</p>
+                </div>
+                <button onclick="closeHistory()" class="text-gray-400 hover:text-white transition-colors p-2">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4">
+                <div id="chart-container" class="relative h-48 mb-6 hidden">
+                    <canvas id="history-chart"></canvas>
+                </div>
+                <div id="history-list" class="space-y-3">
+                    <!-- History items will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "@google/genai": "https://esm.run/@google/genai"
+            }
+        }
+    </script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
@@ -152,7 +219,13 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        
+        let ai = null;
+        try {
+            ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        } catch (e) {
+            console.warn("Gemini API key not found. AI features will be disabled.");
+        }
 
         // State
         const ADMIN_EMAIL = 'franleept@gmail.com';
@@ -250,7 +323,7 @@
                 btnDeleteWorkout.classList.add('hidden');
                 
                 authContainer.innerHTML = `
-                    <button onclick="login()" class="text-sm bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded transition-colors">Login</button>
+                    <button onclick="login()" class="text-sm bg-amber-500 hover:bg-amber-400 text-white px-3 py-1 rounded transition-colors">Login</button>
                 `;
                 if (unsubscribeWorkouts) {
                     unsubscribeWorkouts();
@@ -349,6 +422,70 @@
             renderCreatorExercises();
         };
 
+        window.openBulkImport = () => {
+            document.getElementById('bulk-import-text').value = '';
+            document.getElementById('bulk-import-modal').classList.remove('hidden');
+        };
+
+        window.closeBulkImport = () => {
+            document.getElementById('bulk-import-modal').classList.add('hidden');
+        };
+
+        window.processBulkImport = () => {
+            const text = document.getElementById('bulk-import-text').value;
+            if (!text.trim()) {
+                closeBulkImport();
+                return;
+            }
+
+            const lines = text.split('\n');
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return;
+
+                let parts = [];
+                if (trimmed.includes('\t')) {
+                    parts = trimmed.split('\t');
+                } else if (trimmed.includes('|')) {
+                    parts = trimmed.split('|');
+                } else {
+                    parts = [trimmed];
+                }
+
+                parts = parts.map(p => p.trim());
+
+                let label = '';
+                let name = '';
+                let prescription = '';
+
+                if (parts.length === 1) {
+                    name = parts[0];
+                } else if (parts.length === 2) {
+                    name = parts[0];
+                    prescription = parts[1];
+                } else if (parts.length >= 3) {
+                    label = parts[0];
+                    name = parts[1];
+                    prescription = parts.slice(2).join(' | ');
+                }
+
+                creatorExercises.push({
+                    id: uuid(),
+                    label: label,
+                    name: name,
+                    prescription: prescription
+                });
+            });
+
+            // Remove empty default exercise if it's the only one
+            if (creatorExercises.length > 1 && creatorExercises[0].name === '' && creatorExercises[0].prescription === '' && creatorExercises[0].label === '') {
+                creatorExercises.shift();
+            }
+
+            renderCreatorExercises();
+            closeBulkImport();
+        };
+
         window.removeCreatorExercise = (id) => {
             creatorExercises = creatorExercises.filter(e => e.id !== id);
             renderCreatorExercises();
@@ -364,10 +501,10 @@
                 <div class="bg-card border border-subtle rounded p-3 relative shadow-sm">
                     <button onclick="removeCreatorExercise('${ex.id}')" class="absolute top-2 right-2 text-gray-500 hover:text-red-400 p-1 transition-colors"><i class="fas fa-times"></i></button>
                     <div class="flex gap-3 mb-3 pr-8">
-                        <input type="text" placeholder="A1" value="${ex.label}" oninput="updateCreatorExercise('${ex.id}', 'label', this.value)" class="w-16 bg-input border border-subtle rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors">
-                        <input type="text" placeholder="Exercise Name" value="${ex.name}" oninput="updateCreatorExercise('${ex.id}', 'name', this.value)" class="flex-1 bg-input border border-subtle rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors">
+                        <input type="text" placeholder="A1" value="${ex.label}" oninput="updateCreatorExercise('${ex.id}', 'label', this.value)" class="w-16 bg-input border border-subtle rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors">
+                        <input type="text" placeholder="Exercise Name" value="${ex.name}" oninput="updateCreatorExercise('${ex.id}', 'name', this.value)" class="flex-1 bg-input border border-subtle rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors">
                     </div>
-                    <textarea placeholder="Prescription (e.g. 12 reps x 3 sets; 70% 1RM, Triset)" oninput="updateCreatorExercise('${ex.id}', 'prescription', this.value)" class="w-full bg-input border border-subtle rounded px-3 py-2 text-sm text-subtle focus:outline-none focus:border-blue-500 resize-none h-16 transition-colors">${ex.prescription}</textarea>
+                    <textarea placeholder="Prescription (e.g. 12 reps x 3 sets; 70% 1RM, Triset)" oninput="updateCreatorExercise('${ex.id}', 'prescription', this.value)" class="w-full bg-input border border-subtle rounded px-3 py-2 text-sm text-subtle focus:outline-none focus:border-amber-500 resize-none h-16 transition-colors">${ex.prescription}</textarea>
                 </div>
             `).join('');
         }
@@ -382,13 +519,18 @@
             }
 
             const title = document.getElementById('c-title').value.trim() || 'Untitled Workout';
+            if (title.length > 200) {
+                alert('Workout title must be 200 characters or less.');
+                return;
+            }
             const notes = document.getElementById('c-notes').value.trim();
+            const warmup = document.getElementById('c-warmup').value.trim();
             const cooldown = document.getElementById('c-cooldown').value.trim();
             
             // Filter out empty exercises
             const validExercises = creatorExercises.filter(ex => ex.name.trim() !== '' || ex.prescription.trim() !== '');
             
-            if (validExercises.length === 0 && !notes && !cooldown) {
+            if (validExercises.length === 0 && !notes && !warmup && !cooldown) {
                 alert('Please add some content to your workout before saving.');
                 return;
             }
@@ -399,6 +541,7 @@
                 date: new Date().toISOString(),
                 title,
                 notes,
+                warmup,
                 cooldown,
                 exercises: JSON.parse(JSON.stringify(validExercises)),
                 results: {}
@@ -421,6 +564,7 @@
         window.clearCreator = () => {
             document.getElementById('c-title').value = '';
             document.getElementById('c-notes').value = '';
+            document.getElementById('c-warmup').value = '';
             document.getElementById('c-cooldown').value = '';
             creatorExercises = [];
             renderCreatorExercises();
@@ -434,7 +578,7 @@
             if (!currentUser) {
                 listWorkouts.innerHTML = `
                     <div class="text-center py-16 bg-card border border-subtle rounded-lg shadow-sm">
-                        <i class="fas fa-lock text-4xl text-[#444] mb-4"></i>
+                        <i class="fas fa-lock text-4xl text-[#3d2b5e] mb-4"></i>
                         <p class="text-white font-medium">Please login</p>
                         <p class="text-sm text-subtle mt-1">Sign in to view and create workouts.</p>
                     </div>`;
@@ -444,7 +588,7 @@
             if (workouts.length === 0) {
                 listWorkouts.innerHTML = `
                     <div class="text-center py-16 bg-card border border-subtle rounded-lg shadow-sm">
-                        <i class="fas fa-clipboard-list text-4xl text-[#444] mb-4"></i>
+                        <i class="fas fa-clipboard-list text-4xl text-[#3d2b5e] mb-4"></i>
                         <p class="text-white font-medium">No workouts yet</p>
                         <p class="text-sm text-subtle mt-1">Go to the Creator tab to build one.</p>
                     </div>`;
@@ -452,7 +596,7 @@
             }
 
             listWorkouts.innerHTML = workouts.map(w => `
-                <div class="bg-card border border-subtle rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors shadow-sm" onclick="openWorkout('${w.id}')">
+                <div class="bg-card border border-subtle rounded-lg p-4 cursor-pointer hover:border-amber-500 transition-colors shadow-sm" onclick="openWorkout('${w.id}')">
                     <h3 class="font-bold text-white text-lg">${w.title}</h3>
                     <p class="text-xs text-subtle mt-1.5 flex items-center gap-2">
                         <i class="far fa-calendar-alt"></i> ${new Date(w.date).toLocaleDateString()} 
@@ -480,6 +624,7 @@
             activeWorkoutId = id;
             listWorkouts.classList.add('hidden');
             activeWorkoutContainer.classList.remove('hidden');
+            document.getElementById('exercise-search').value = '';
             renderActiveWorkout();
         };
 
@@ -488,29 +633,80 @@
             renderWorkoutsList();
         };
 
+        window.filterExercises = (query) => {
+            const q = query.toLowerCase();
+            const cards = document.querySelectorAll('.exercise-card');
+            cards.forEach(card => {
+                const name = card.getAttribute('data-name');
+                if (name.includes(q)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        };
+
         window.updateResult = async (exId, inputEl) => {
             if (!currentUser || !activeWorkoutId || !currentViewUid) return;
             const w = workouts.find(w => w.id === activeWorkoutId);
             if (w) {
-                // Optimistic UI update
-                const icon = inputEl.nextElementSibling;
-                if (inputEl.value.trim().length > 0) {
-                    icon.className = 'fas fa-check-circle text-green-500 absolute right-3 top-3 text-sm';
-                } else {
-                    icon.className = 'fas fa-times-circle text-red-500 absolute right-3 top-3 text-sm';
-                }
-
                 // Update Firestore
                 const updatedResults = { ...w.results, [exId]: inputEl.value };
                 try {
                     await setDoc(doc(db, 'users', currentViewUid, 'workouts', activeWorkoutId), { results: updatedResults }, { merge: true });
                 } catch (error) {
                     console.error("Error updating result:", error);
-                    // Revert icon on error
-                    if (w.results[exId]?.trim().length > 0) {
-                        icon.className = 'fas fa-check-circle text-green-500 absolute right-3 top-3 text-sm';
-                    } else {
-                        icon.className = 'fas fa-times-circle text-red-500 absolute right-3 top-3 text-sm';
+                }
+            }
+        };
+
+        window.addSet = async (exId) => {
+            if (!currentUser || !activeWorkoutId || !currentViewUid) return;
+            const w = workouts.find(w => w.id === activeWorkoutId);
+            if (w) {
+                let sets = w.results[exId];
+                if (!Array.isArray(sets)) {
+                    // If it was a string, we might want to preserve it or just clear it. 
+                    // Let's start fresh with sets if it's not an array.
+                    sets = [];
+                }
+                sets.push({ weight: '', reps: '' });
+                const updatedResults = { ...w.results, [exId]: sets };
+                try {
+                    await setDoc(doc(db, 'users', currentViewUid, 'workouts', activeWorkoutId), { results: updatedResults }, { merge: true });
+                } catch (error) {
+                    console.error("Error adding set:", error);
+                }
+            }
+        };
+
+        window.removeSet = async (exId, setIndex) => {
+            if (!currentUser || !activeWorkoutId || !currentViewUid) return;
+            const w = workouts.find(w => w.id === activeWorkoutId);
+            if (w) {
+                let sets = [...(w.results[exId] || [])];
+                sets.splice(setIndex, 1);
+                const updatedResults = { ...w.results, [exId]: sets };
+                try {
+                    await setDoc(doc(db, 'users', currentViewUid, 'workouts', activeWorkoutId), { results: updatedResults }, { merge: true });
+                } catch (error) {
+                    console.error("Error removing set:", error);
+                }
+            }
+        };
+
+        window.updateSet = async (exId, setIndex, field, value) => {
+            if (!currentUser || !activeWorkoutId || !currentViewUid) return;
+            const w = workouts.find(w => w.id === activeWorkoutId);
+            if (w) {
+                let sets = JSON.parse(JSON.stringify(w.results[exId] || []));
+                if (sets[setIndex]) {
+                    sets[setIndex][field] = value;
+                    const updatedResults = { ...w.results, [exId]: sets };
+                    try {
+                        await setDoc(doc(db, 'users', currentViewUid, 'workouts', activeWorkoutId), { results: updatedResults }, { merge: true });
+                    } catch (error) {
+                        console.error("Error updating set:", error);
                     }
                 }
             }
@@ -523,9 +719,15 @@
             let html = `
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-white mb-3 tracking-tight">${w.title}</h2>
+                    ${w.warmup ? `
+                        <div class="text-sm text-subtle whitespace-pre-wrap mb-4 leading-relaxed bg-card border border-subtle rounded-md p-3 shadow-sm">
+                            <span class="block text-xs font-bold text-orange-400 uppercase tracking-wider mb-1"><i class="fas fa-fire mr-1"></i> Warm-up</span>
+                            ${w.warmup}
+                        </div>
+                    ` : ''}
                     ${w.notes ? `
-                        <div class="text-sm text-subtle whitespace-pre-wrap mb-4 leading-relaxed">
-                            <span class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Coach's Notes / Warmup</span>
+                        <div class="text-sm text-subtle whitespace-pre-wrap mb-4 leading-relaxed bg-card border border-subtle rounded-md p-3 shadow-sm">
+                            <span class="block text-xs font-bold text-amber-400 uppercase tracking-wider mb-1"><i class="fas fa-info-circle mr-1"></i> Coach's Notes</span>
                             ${w.notes}
                         </div>
                     ` : ''}
@@ -539,32 +741,60 @@
                                  ex.label.charAt(0).toUpperCase() === nextEx.label.charAt(0).toUpperCase();
                 
                 const resultVal = w.results[ex.id] || '';
-                const hasResult = resultVal.trim().length > 0;
-                const iconClass = hasResult ? 'fa-check-circle text-green-500' : 'fa-times-circle text-red-500';
+                const sets = Array.isArray(resultVal) ? resultVal : [];
+                const hasResult = sets.length > 0 || (typeof resultVal === 'string' && resultVal.trim().length > 0);
 
                 html += `
-                    <div class="relative mb-${isLinked ? '6' : '3'}">
+                    <div class="relative mb-${isLinked ? '6' : '3'} exercise-card" data-name="${ex.name.replace(/"/g, '&quot;').toLowerCase()}">
                         <div class="bg-card border border-subtle rounded-md p-3 shadow-sm">
                             <div class="flex justify-between items-start">
                                 <h3 class="font-bold text-white text-sm leading-tight pr-4">
                                     ${ex.label ? `<span class="text-gray-400 mr-1">${ex.label})</span>` : ''}${ex.name}
                                 </h3>
                                 <div class="flex gap-3 text-gray-500 text-sm shrink-0">
-                                    <button onclick="askAboutExercise('${ex.name.replace(/'/g, "\\'")}')" class="hover:text-blue-400 transition-colors" title="Ask AI Coach">
+                                    <button onclick="askAboutExercise('${ex.name.replace(/'/g, "\\'")}')" class="hover:text-amber-400 transition-colors" title="Ask AI Coach">
                                         <i class="fas fa-robot"></i>
                                     </button>
-                                    <i class="fas fa-history cursor-pointer hover:text-white transition-colors" title="History"></i>
+                                    <button onclick="showExerciseHistory('${ex.name.replace(/'/g, "\\'")}')" class="hover:text-white transition-colors" title="History">
+                                        <i class="fas fa-history"></i>
+                                    </button>
                                 </div>
                             </div>
                             <p class="text-xs text-subtle mt-2 mb-3 leading-relaxed">${ex.prescription}</p>
-                            <div class="relative">
-                                <input type="text" placeholder="Add Results..." value="${resultVal}" oninput="updateResult('${ex.id}', this)" class="w-full bg-input border border-subtle rounded px-3 py-2.5 text-sm text-white focus:outline-none focus:border-gray-500 transition-colors pr-10">
-                                <i class="fas ${iconClass} absolute right-3 top-3 text-sm transition-colors"></i>
+                            
+                            <!-- Set Logger -->
+                            <div class="space-y-2">
+                                ${sets.map((s, idx) => `
+                                    <div class="flex items-center gap-2 animate-in slide-in-from-left-2 duration-200">
+                                        <span class="text-[10px] font-bold text-gray-500 w-4">${idx + 1}</span>
+                                        <div class="flex-1 grid grid-cols-2 gap-2">
+                                            <div class="relative">
+                                                <input type="number" placeholder="kg" value="${s.weight}" oninput="updateSet('${ex.id}', ${idx}, 'weight', this.value)" class="w-full bg-input border border-subtle rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors">
+                                                <span class="absolute right-2 top-1.5 text-[9px] text-gray-600">kg</span>
+                                            </div>
+                                            <div class="relative">
+                                                <input type="number" placeholder="reps" value="${s.reps}" oninput="updateSet('${ex.id}', ${idx}, 'reps', this.value)" class="w-full bg-input border border-subtle rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors">
+                                                <span class="absolute right-2 top-1.5 text-[9px] text-gray-600">reps</span>
+                                            </div>
+                                        </div>
+                                        <button onclick="removeSet('${ex.id}', ${idx})" class="text-gray-600 hover:text-red-400 transition-colors px-1">
+                                            <i class="fas fa-times text-xs"></i>
+                                        </button>
+                                    </div>
+                                `).join('')}
+                                
+                                ${typeof resultVal === 'string' && resultVal.trim().length > 0 ? `
+                                    <div class="text-xs text-yellow-500/70 italic mb-2 px-1">Legacy note: ${resultVal}</div>
+                                ` : ''}
+
+                                <button onclick="addSet('${ex.id}')" class="w-full py-1.5 border border-dashed border-subtle rounded text-[10px] font-bold text-gray-500 hover:text-amber-400 hover:border-amber-500/50 transition-all uppercase tracking-wider">
+                                    + Add Set
+                                </button>
                             </div>
                         </div>
                         ${isLinked ? `
                         <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-                            <div class="w-6 h-6 rounded-full bg-[#444] flex items-center justify-center border-2 border-[#222] shadow-sm">
+                            <div class="w-6 h-6 rounded-full bg-[#3d2b5e] flex items-center justify-center border-2 border-[#0a0510] shadow-sm">
                                 <i class="fas fa-link text-[10px] text-gray-400"></i>
                             </div>
                         </div>
@@ -621,6 +851,10 @@
             const loadingId = appendChatMessage('ai', '<i class="fas fa-ellipsis-h animate-pulse"></i>');
             
             try {
+                if (!ai) {
+                    updateChatMessage(loadingId, "The AI Coach is not available because the Gemini API key is missing. If you are hosting on GitHub Pages, the AI Studio environment variables are not present.");
+                    return;
+                }
                 if (!chatSession) {
                     chatSession = ai.chats.create({
                         model: "gemini-3.1-pro-preview",
@@ -646,7 +880,7 @@
             if (role === 'user') {
                 html = `
                     <div class="flex gap-2 justify-end" id="${id}">
-                        <div class="bg-blue-600 text-sm text-white p-3 rounded-lg rounded-tr-none max-w-[85%]">
+                        <div class="bg-amber-500 text-sm text-white p-3 rounded-lg rounded-tr-none max-w-[85%]">
                             ${content}
                         </div>
                     </div>
@@ -654,10 +888,10 @@
             } else {
                 html = `
                     <div class="flex gap-2" id="${id}">
-                        <div class="w-8 h-8 rounded-full bg-blue-900 flex items-center justify-center shrink-0 mt-1">
-                            <i class="fas fa-robot text-blue-300 text-xs"></i>
+                        <div class="w-8 h-8 rounded-full bg-[#3d2b5e] flex items-center justify-center shrink-0 mt-1">
+                            <i class="fas fa-robot text-amber-300 text-xs"></i>
                         </div>
-                        <div class="bg-[#333] text-sm text-gray-200 p-3 rounded-lg rounded-tl-none max-w-[85%] markdown-body">
+                        <div class="bg-[#2d1b4e] text-sm text-gray-200 p-3 rounded-lg rounded-tl-none max-w-[85%] markdown-body">
                             ${content}
                         </div>
                     </div>
@@ -680,6 +914,230 @@
             const messagesEl = document.getElementById('chat-messages');
             messagesEl.scrollTop = messagesEl.scrollHeight;
         }
+
+        // --- History Logic ---
+        window.showExerciseHistory = (exerciseName) => {
+            const modal = document.getElementById('history-modal');
+            const title = document.getElementById('history-title');
+            const listContent = document.getElementById('history-list');
+            const chartContainer = document.getElementById('chart-container');
+            
+            title.innerText = exerciseName;
+            listContent.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-amber-500 text-2xl"></i></div>';
+            chartContainer.classList.add('hidden');
+            modal.classList.remove('hidden');
+
+            // We use the already fetched 'workouts' array which contains all workouts for the current client
+            const history = [];
+            workouts.forEach(w => {
+                const ex = w.exercises.find(e => e.name.toLowerCase() === exerciseName.toLowerCase());
+                if (ex && w.results && w.results[ex.id]) {
+                    let resultDisplay = '';
+                    const res = w.results[ex.id];
+                    if (Array.isArray(res)) {
+                        resultDisplay = res.map((s, idx) => {
+                            const weight = parseFloat(s.weight) || 0;
+                            const reps = parseInt(s.reps) || 0;
+                            const volume = weight * reps;
+                            const e1rm = reps > 0 ? Math.round(weight * (1 + reps / 30)) : 0;
+                            
+                            return `
+                            <div class="flex flex-col py-2 border-b border-white/5 last:border-0">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-xs font-bold text-gray-400">Set ${idx + 1}</span>
+                                    <span class="text-sm font-bold text-white">${weight} <span class="text-xs text-gray-500 font-normal">kg</span> × ${reps} <span class="text-xs text-gray-500 font-normal">reps</span></span>
+                                </div>
+                                <div class="flex justify-between items-center text-[10px] text-gray-500">
+                                    <span>Vol: ${volume} kg</span>
+                                    <span>Est. 1RM: ${e1rm} kg</span>
+                                </div>
+                            </div>
+                            `;
+                        }).join('');
+                    } else {
+                        resultDisplay = `<div class="text-xs text-gray-300 py-1">${res}</div>`; // legacy string
+                    }
+                    history.push({
+                        date: w.date,
+                        result: resultDisplay,
+                        workoutTitle: w.title,
+                        rawResults: res
+                    });
+                }
+            });
+
+            // Sort by date descending
+            history.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (history.length === 0) {
+                listContent.innerHTML = `
+                    <div class="text-center py-12 text-subtle">
+                        <i class="fas fa-info-circle text-3xl mb-3 block"></i>
+                        <p>No history found for this exercise.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listContent.innerHTML = history.map(h => {
+                const dateObj = new Date(h.date);
+                const dateString = dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+                const timeString = dateObj.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+                
+                return `
+                <div class="bg-[#1a0f2e] border border-subtle rounded-lg p-3 shadow-sm">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">${dateString}</span>
+                            <span class="text-[10px] text-gray-500 mt-0.5">${timeString}</span>
+                        </div>
+                        <span class="text-[10px] text-gray-500 italic truncate max-w-[150px] text-right">${h.workoutTitle}</span>
+                    </div>
+                    <div class="space-y-1 mt-2 bg-black/20 rounded p-2 border border-white/5">
+                        ${h.result}
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            // --- Chart Logic ---
+            if (window.exerciseChart) {
+                window.exerciseChart.destroy();
+            }
+
+            // For chart, we want chronological order (ascending)
+            const chartData = [...history].reverse();
+            const labels = [];
+            const weightData = [];
+            const e1rmData = [];
+            const repsData = [];
+            let hasValidData = false;
+
+            chartData.forEach(h => {
+                labels.push(new Date(h.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+                
+                let maxWeight = 0;
+                let maxE1rm = 0;
+                let maxReps = 0;
+                if (Array.isArray(h.rawResults)) {
+                    h.rawResults.forEach(set => {
+                        const w = parseFloat(set.weight) || 0;
+                        const r = parseInt(set.reps) || 0;
+                        const e1rm = r > 0 ? Math.round(w * (1 + r / 30)) : 0;
+                        
+                        if (w > maxWeight) maxWeight = w;
+                        if (e1rm > maxE1rm) maxE1rm = e1rm;
+                        if (r > maxReps) maxReps = r;
+                    });
+                }
+                weightData.push(maxWeight);
+                e1rmData.push(maxE1rm);
+                repsData.push(maxReps);
+                if (maxWeight > 0 || maxE1rm > 0 || maxReps > 0) hasValidData = true;
+            });
+
+            if (hasValidData && chartData.length > 0) {
+                chartContainer.classList.remove('hidden');
+                const ctx = document.getElementById('history-chart').getContext('2d');
+                window.exerciseChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Est. 1RM (kg)',
+                                data: e1rmData,
+                                borderColor: '#a78bfa',
+                                backgroundColor: 'transparent',
+                                borderWidth: 2,
+                                pointBackgroundColor: '#a78bfa',
+                                pointRadius: 4,
+                                fill: false,
+                                tension: 0.3,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: 'Max Weight (kg)',
+                                data: weightData,
+                                borderColor: '#d4af37',
+                                backgroundColor: 'rgba(212, 175, 55, 0.1)',
+                                borderWidth: 2,
+                                pointBackgroundColor: '#d4af37',
+                                pointRadius: 4,
+                                fill: true,
+                                tension: 0.3,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: 'Max Reps',
+                                data: repsData,
+                                borderColor: '#f4f0fa',
+                                backgroundColor: 'transparent',
+                                borderWidth: 2,
+                                pointBackgroundColor: '#f4f0fa',
+                                pointRadius: 4,
+                                fill: false,
+                                tension: 0.3,
+                                yAxisID: 'y1'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { 
+                                display: true,
+                                labels: { color: '#9ca3af', boxWidth: 12 }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += context.parsed.y;
+                                            if (context.dataset.label.includes('kg')) {
+                                                label += ' kg';
+                                            }
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: { 
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                beginAtZero: true,
+                                grid: { color: '#3d2b5e' },
+                                ticks: { color: '#9ca3af' }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                beginAtZero: true,
+                                grid: { display: false },
+                                ticks: { color: '#9ca3af' }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#9ca3af' }
+                            }
+                        }
+                    }
+                });
+            }
+        };
+
+        window.closeHistory = () => {
+            document.getElementById('history-modal').classList.add('hidden');
+        };
     </script>
 </body>
 </html>

@@ -28,7 +28,9 @@
         },
         "title": {
           "type": "string",
-          "description": "The title of the workout."
+          "description": "The title of the workout.",
+          "minLength": 1,
+          "maxLength": 200
         },
         "notes": {
           "type": "string",
