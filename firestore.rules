@@ -6,8 +6,8 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+    function isOwner(emailId) {
+      return isAuthenticated() && request.auth.token.email == emailId;
     }
 
     function isAdmin() {
@@ -26,9 +26,9 @@ service cloud.firestore {
       return exercises is list && exercises.size() <= 100;
     }
 
-    function isValidWorkout(data, userId) {
-      return data.keys().hasAll(['userId', 'date', 'title', 'exercises', 'results']) &&
-             data.userId == userId &&
+    function isValidWorkout(data, emailId) {
+      return data.keys().hasAll(['userEmail', 'date', 'title', 'exercises', 'results']) &&
+             data.userEmail == emailId &&
              isValidDateString(data.date) &&
              isValidStringLength(data.title, 1, 200) &&
              (!('notes' in data) || isValidStringLength(data.notes, 0, 2000)) &&
@@ -37,15 +37,15 @@ service cloud.firestore {
              data.results is map;
     }
 
-    match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow write: if isOwner(userId) || isAdmin();
+    match /users/{emailId} {
+      allow read: if isOwner(emailId) || isAdmin();
+      allow write: if isOwner(emailId) || isAdmin();
     }
 
-    match /users/{userId}/workouts/{workoutId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow create: if isAdmin() && isValidWorkout(request.resource.data, userId);
-      allow update: if (isOwner(userId) || isAdmin()) && isValidWorkout(request.resource.data, userId) && request.resource.data.userId == resource.data.userId;
+    match /users/{emailId}/workouts/{workoutId} {
+      allow read: if isOwner(emailId) || isAdmin();
+      allow create: if isAdmin() && isValidWorkout(request.resource.data, emailId);
+      allow update: if (isOwner(emailId) || isAdmin()) && isValidWorkout(request.resource.data, emailId) && request.resource.data.userEmail == resource.data.userEmail;
       allow delete: if isAdmin();
     }
   }

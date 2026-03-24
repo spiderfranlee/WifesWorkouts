@@ -10,16 +10,16 @@
         "name": { "type": "string" },
         "lastLogin": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email"]
+      "required": ["email"]
     },
     "Workout": {
       "title": "Workout",
       "description": "A user's workout session, including exercises and results.",
       "type": "object",
       "properties": {
-        "userId": {
+        "userEmail": {
           "type": "string",
-          "description": "The ID of the user who owns this workout."
+          "description": "The email of the user who owns this workout."
         },
         "date": {
           "type": "string",
@@ -59,17 +59,17 @@
           "description": "Map of exercise IDs to their results (e.g., weight/reps)."
         }
       },
-      "required": ["userId", "date", "title", "exercises", "results"]
+      "required": ["userEmail", "date", "title", "exercises", "results"]
     }
   },
   "firestore": {
-    "/users/{userId}": {
+    "/users/{emailId}": {
       "schema": {
         "$ref": "#/entities/User"
       },
       "description": "User profiles."
     },
-    "/users/{userId}/workouts/{workoutId}": {
+    "/users/{emailId}/workouts/{workoutId}": {
       "schema": {
         "$ref": "#/entities/Workout"
       },

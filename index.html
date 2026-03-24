@@ -48,7 +48,10 @@
         <!-- Workouts List / Logger View -->
         <div id="workouts-view" class="space-y-6 animate-in fade-in duration-300">
             <div id="admin-client-selector" class="hidden bg-card border border-subtle rounded-lg p-4 shadow-sm">
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">View Client Workouts</label>
+                <div class="flex justify-between items-center mb-2">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">View Client Workouts</label>
+                    <button onclick="openAddClientModal()" class="text-xs text-amber-400 hover:text-amber-300 transition-colors"><i class="fas fa-plus"></i> Add Client</button>
+                </div>
                 <select id="w-client-select" onchange="selectClientWorkouts(this.value)" class="w-full bg-input border border-subtle rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors">
                     <option value="">Select a client...</option>
                 </select>
@@ -144,6 +147,32 @@
         <button onclick="toggleChat()" class="w-14 h-14 bg-amber-500 hover:bg-amber-400 text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105">
             <i class="fas fa-comments text-2xl"></i>
         </button>
+    </div>
+
+    <!-- Add Client Modal -->
+    <div id="add-client-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div class="bg-card border border-subtle w-full max-w-sm rounded-xl shadow-2xl overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-subtle flex justify-between items-center bg-[#1a0f2e]">
+                <h3 class="text-white font-bold text-lg">Add New Client</h3>
+                <button onclick="closeAddClientModal()" class="text-gray-500 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4 flex-1 space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Client Email</label>
+                    <input type="email" id="new-client-email" class="w-full bg-input border border-subtle rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" placeholder="client@example.com">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Client Name (Optional)</label>
+                    <input type="text" id="new-client-name" class="w-full bg-input border border-subtle rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" placeholder="John Doe">
+                </div>
+            </div>
+            <div class="p-4 border-t border-subtle flex justify-end gap-3 bg-[#1a0f2e]">
+                <button onclick="closeAddClientModal()" class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">Cancel</button>
+                <button onclick="addClient()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-white rounded text-sm font-medium transition-colors">Add Client</button>
+            </div>
+        </div>
     </div>
 
     <!-- Bulk Import Modal -->
@@ -277,8 +306,7 @@
                 
                 // Save user profile
                 try {
-                    await setDoc(doc(db, 'users', user.uid), {
-                        uid: user.uid,
+                    await setDoc(doc(db, 'users', user.email), {
                         email: user.email,
                         name: user.displayName || user.email,
                         lastLogin: new Date().toISOString()
@@ -312,8 +340,8 @@
                     tabCreator.classList.add('hidden');
                     adminClientSelector.classList.add('hidden');
                     btnDeleteWorkout.classList.add('hidden');
-                    currentViewUid = user.uid;
-                    subscribeToWorkouts(user.uid);
+                    currentViewUid = user.email;
+                    subscribeToWorkouts(user.email);
                 }
             } else {
                 isAdmin = false;
@@ -340,7 +368,7 @@
             const cSelect = document.getElementById('c-client-select');
             
             const options = `<option value="">Select a client...</option>` + 
-                allUsers.filter(u => u.email !== ADMIN_EMAIL).map(u => `<option value="${u.uid}">${u.name} (${u.email})</option>`).join('');
+                allUsers.filter(u => u.email !== ADMIN_EMAIL).map(u => `<option value="${u.email}">${u.name} (${u.email})</option>`).join('');
                 
             const wVal = wSelect.value;
             const cVal = cSelect.value;
@@ -352,10 +380,10 @@
             if (cVal) cSelect.value = cVal;
         };
 
-        window.selectClientWorkouts = (uid) => {
-            currentViewUid = uid;
-            if (uid) {
-                subscribeToWorkouts(uid);
+        window.selectClientWorkouts = (email) => {
+            currentViewUid = email;
+            if (email) {
+                subscribeToWorkouts(email);
             } else {
                 if (unsubscribeWorkouts) {
                     unsubscribeWorkouts();
@@ -367,11 +395,11 @@
             }
         };
 
-        function subscribeToWorkouts(uid) {
-            if (!uid) return;
+        function subscribeToWorkouts(email) {
+            if (!email) return;
             if (unsubscribeWorkouts) unsubscribeWorkouts();
             
-            const q = query(collection(db, 'users', uid, 'workouts'), orderBy('date', 'desc'));
+            const q = query(collection(db, 'users', email, 'workouts'), orderBy('date', 'desc'));
             unsubscribeWorkouts = onSnapshot(q, (snapshot) => {
                 workouts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 if (activeWorkoutId) {
@@ -420,6 +448,40 @@
         window.addCreatorExercise = () => {
             creatorExercises.push({ id: uuid(), label: '', name: '', prescription: '' });
             renderCreatorExercises();
+        };
+
+        window.openAddClientModal = () => {
+            document.getElementById('new-client-email').value = '';
+            document.getElementById('new-client-name').value = '';
+            document.getElementById('add-client-modal').classList.remove('hidden');
+        };
+
+        window.closeAddClientModal = () => {
+            document.getElementById('add-client-modal').classList.add('hidden');
+        };
+
+        window.addClient = async () => {
+            if (!isAdmin) return;
+            const email = document.getElementById('new-client-email').value.trim().toLowerCase();
+            const name = document.getElementById('new-client-name').value.trim() || email;
+            
+            if (!email || !email.includes('@')) {
+                alert('Please enter a valid email address.');
+                return;
+            }
+
+            try {
+                await setDoc(doc(db, 'users', email), {
+                    email: email,
+                    name: name,
+                    lastLogin: null
+                }, { merge: true });
+                closeAddClientModal();
+                alert('Client added successfully!');
+            } catch (error) {
+                console.error("Error adding client:", error);
+                alert("Failed to add client: " + error.message);
+            }
         };
 
         window.openBulkImport = () => {
@@ -512,8 +574,8 @@
         window.saveWorkout = async () => {
             if (!isAdmin) return;
             
-            const targetUid = document.getElementById('c-client-select').value;
-            if (!targetUid) {
+            const targetEmail = document.getElementById('c-client-select').value;
+            if (!targetEmail) {
                 alert("Please select a client to assign this workout to.");
                 return;
             }
@@ -537,7 +599,7 @@
 
             const workoutId = uuid();
             const workout = {
-                userId: targetUid,
+                userEmail: targetEmail,
                 date: new Date().toISOString(),
                 title,
                 notes,
@@ -548,12 +610,12 @@
             };
 
             try {
-                await setDoc(doc(db, 'users', targetUid, 'workouts', workoutId), workout);
+                await setDoc(doc(db, 'users', targetEmail, 'workouts', workoutId), workout);
                 clearCreator();
                 
                 // Switch to workouts tab and view that client
-                document.getElementById('w-client-select').value = targetUid;
-                selectClientWorkouts(targetUid);
+                document.getElementById('w-client-select').value = targetEmail;
+                selectClientWorkouts(targetEmail);
                 switchTab('workouts');
             } catch (error) {
                 console.error("Error saving workout:", error);
