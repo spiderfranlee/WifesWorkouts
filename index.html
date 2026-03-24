@@ -230,7 +230,7 @@
     </script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { GoogleGenAI } from "@google/genai";
 
@@ -282,7 +282,7 @@
         window.login = async () => {
             const provider = new GoogleAuthProvider();
             try {
-                await signInWithPopup(auth, provider);
+                await signInWithRedirect(auth, provider);
             } catch (error) {
                 console.error("Login failed", error);
                 alert("Login failed: " + error.message);
@@ -300,8 +300,17 @@
         onAuthStateChanged(auth, async (user) => {
             currentUser = user;
             if (user) {
-                const userEmail = user.email.toLowerCase();
+                console.log("User logged in:", user);
+                user.getIdTokenResult().then(token => console.log("Token:", token.claims));
+                
+                const userEmail = (user.email || '').toLowerCase();
                 isAdmin = userEmail === ADMIN_EMAIL.toLowerCase();
+                
+                if (!userEmail) {
+                    console.error("User email is missing!");
+                    alert("Your account does not have an email address associated with it. Please sign in with an account that has an email.");
+                    return;
+                }
                 
                 // Save user profile
                 try {
