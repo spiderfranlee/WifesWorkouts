@@ -5,13 +5,18 @@ service cloud.firestore {
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function isOwner(emailId) {
-      return isAuthenticated() && request.auth.token.email == emailId;
+      return request.auth != null && 
+             request.auth.token.email != null && 
+             request.auth.token.email == emailId;
     }
 
     function isAdmin() {
-      return isAuthenticated() && request.auth.token.email == 'franny.lee@gmail.com';
+      return request.auth != null && 
+             request.auth.token.email != null && 
+             (request.auth.token.email == 'franny.lee@gmail.com' || 
+              request.auth.token.email == 'Franny.lee@gmail.com');
     }
 
     function isValidStringLength(field, minLen, maxLen) {
@@ -38,14 +43,14 @@ service cloud.firestore {
     }
 
     match /users/{emailId} {
-      allow read: if isOwner(emailId) || isAdmin();
-      allow write: if isOwner(emailId) || isAdmin();
+      allow read: if isAdmin() || isOwner(emailId);
+      allow write: if isAdmin() || isOwner(emailId);
     }
 
     match /users/{emailId}/workouts/{workoutId} {
-      allow read: if isOwner(emailId) || isAdmin();
+      allow read: if isAdmin() || isOwner(emailId);
       allow create: if isAdmin() && isValidWorkout(request.resource.data, emailId);
-      allow update: if (isOwner(emailId) || isAdmin()) && isValidWorkout(request.resource.data, emailId) && request.resource.data.userEmail == resource.data.userEmail;
+      allow update: if (isAdmin() || isOwner(emailId)) && isValidWorkout(request.resource.data, emailId) && request.resource.data.userEmail == resource.data.userEmail;
       allow delete: if isAdmin();
     }
   }

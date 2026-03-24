@@ -330,6 +330,9 @@
                     onSnapshot(collection(db, 'users'), (snapshot) => {
                         allUsers = snapshot.docs.map(doc => doc.data());
                         renderClientDropdowns();
+                    }, (error) => {
+                        console.error("Error fetching users:", error);
+                        alert("Failed to fetch users: " + error.message);
                     });
                     
                     // Admin doesn't auto-subscribe until they pick a client
