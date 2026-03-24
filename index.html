@@ -257,7 +257,7 @@
         }
 
         // State
-        const ADMIN_EMAIL = 'franleept@gmail.com';
+        const ADMIN_EMAIL = 'franny.lee@gmail.com';
         let isAdmin = false;
         let allUsers = [];
         let currentViewUid = null;
@@ -302,13 +302,14 @@
         onAuthStateChanged(auth, async (user) => {
             currentUser = user;
             if (user) {
-                isAdmin = user.email === ADMIN_EMAIL;
+                const userEmail = user.email.toLowerCase();
+                isAdmin = userEmail === ADMIN_EMAIL.toLowerCase();
                 
                 // Save user profile
                 try {
-                    await setDoc(doc(db, 'users', user.email), {
-                        email: user.email,
-                        name: user.displayName || user.email,
+                    await setDoc(doc(db, 'users', userEmail), {
+                        email: userEmail,
+                        name: user.displayName || userEmail,
                         lastLogin: new Date().toISOString()
                     }, { merge: true });
                 } catch (e) {
@@ -340,8 +341,8 @@
                     tabCreator.classList.add('hidden');
                     adminClientSelector.classList.add('hidden');
                     btnDeleteWorkout.classList.add('hidden');
-                    currentViewUid = user.email;
-                    subscribeToWorkouts(user.email);
+                    currentViewUid = userEmail;
+                    subscribeToWorkouts(userEmail);
                 }
             } else {
                 isAdmin = false;
