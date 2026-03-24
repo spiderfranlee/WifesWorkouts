@@ -231,21 +231,59 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, getDocFromServer } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { GoogleGenAI } from "@google/genai";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBYOA4sqaKziF2BmV4YKoeiKzt33ZpJYEg",
-            authDomain: "studio-4726107794-e57f6.firebaseapp.com",
-            projectId: "studio-4726107794-e57f6",
-            storageBucket: "studio-4726107794-e57f6.firebasestorage.app",
-            messagingSenderId: "107073588426",
-            appId: "1:107073588426:web:e95968246048646c923833"
-        };
+        import firebaseConfig from "./firebase-applet-config.json" with { type: "json" };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
+        const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+
+        const OperationType = {
+            CREATE: 'create',
+            UPDATE: 'update',
+            DELETE: 'delete',
+            LIST: 'list',
+            GET: 'get',
+            WRITE: 'write'
+        };
+
+        function handleFirestoreError(error, operationType, path) {
+            const errInfo = {
+                error: error instanceof Error ? error.message : String(error),
+                authInfo: {
+                    userId: auth.currentUser?.uid,
+                    email: auth.currentUser?.email,
+                    emailVerified: auth.currentUser?.emailVerified,
+                    isAnonymous: auth.currentUser?.isAnonymous,
+                    tenantId: auth.currentUser?.tenantId,
+                    providerInfo: auth.currentUser?.providerData.map(provider => ({
+                        providerId: provider.providerId,
+                        displayName: provider.displayName,
+                        email: provider.email,
+                        photoUrl: provider.photoURL
+                    })) || []
+                },
+                operationType,
+                path
+            };
+            console.error('Firestore Error: ', JSON.stringify(errInfo));
+            throw new Error(JSON.stringify(errInfo));
+        }
+
+        async function testConnection() {
+            try {
+                await getDocFromServer(doc(db, 'test', 'connection'));
+                console.log("Firestore connection successful!");
+            } catch (error) {
+                if(error instanceof Error && error.message.includes('the client is offline')) {
+                    console.error("Please check your Firebase configuration. The client is offline.");
+                } else {
+                    console.error("Firestore connection test error:", error);
+                }
+            }
+        }
+        testConnection();
         
         let ai = null;
         try {
@@ -320,7 +358,7 @@
                         lastLogin: new Date().toISOString()
                     }, { merge: true });
                 } catch (e) {
-                    console.error("Error saving user profile", e);
+                    handleFirestoreError(e, OperationType.WRITE, 'users/' + userEmail);
                 }
 
                 authContainer.innerHTML = `
@@ -490,8 +528,7 @@
                 closeAddClientModal();
                 alert('Client added successfully!');
             } catch (error) {
-                console.error("Error adding client:", error);
-                alert("Failed to add client: " + error.message);
+                handleFirestoreError(error, OperationType.WRITE, `users/${email}`);
             }
         };
 
@@ -629,8 +666,7 @@
                 selectClientWorkouts(targetEmail);
                 switchTab('workouts');
             } catch (error) {
-                console.error("Error saving workout:", error);
-                alert("Failed to save workout: " + error.message);
+                handleFirestoreError(error, OperationType.WRITE, `users/${targetEmail}/workouts/${workoutId}`);
             }
         };
 
@@ -728,7 +764,7 @@
                 try {
                     await setDoc(doc(db, 'users', currentViewUid, 'workouts', activeWorkoutId), { results: updatedResults }, { merge: true });
                 } catch (error) {
-                    console.error("Error updating result:", error);
+                    handleFirestoreError(error, OperationType.UPDATE, `users/${currentViewUid}/workouts/${activeWorkoutId}`);
                 }
             }
         };
@@ -748,7 +784,7 @@
                 try {
                     await setDoc(doc(db, 'users', currentViewUid, 'workouts', activeWorkoutId), { results: updatedResults }, { merge: true });
                 } catch (error) {
-                    console.error("Error adding set:", error);
+                    handleFirestoreError(error, OperationType.UPDATE, `users/${currentViewUid}/workouts/${activeWorkoutId}`);
                 }
             }
         };
@@ -763,7 +799,7 @@
                 try {
                     await setDoc(doc(db, 'users', currentViewUid, 'workouts', activeWorkoutId), { results: updatedResults }, { merge: true });
                 } catch (error) {
-                    console.error("Error removing set:", error);
+                    handleFirestoreError(error, OperationType.UPDATE, `users/${currentViewUid}/workouts/${activeWorkoutId}`);
                 }
             }
         };
@@ -779,7 +815,7 @@
                     try {
                         await setDoc(doc(db, 'users', currentViewUid, 'workouts', activeWorkoutId), { results: updatedResults }, { merge: true });
                     } catch (error) {
-                        console.error("Error updating set:", error);
+                        handleFirestoreError(error, OperationType.UPDATE, `users/${currentViewUid}/workouts/${activeWorkoutId}`);
                     }
                 }
             }
