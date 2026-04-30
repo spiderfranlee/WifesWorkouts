@@ -26,6 +26,10 @@ service cloud.firestore {
       }
     }
     
+    match /workoutTemplates/{templateId} {
+      allow read, write: if isAdmin();
+    }
+    
     // Allow the connection test to succeed for anyone
     match /test/connection {
       allow read: if true;

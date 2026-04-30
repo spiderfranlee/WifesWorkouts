@@ -8,21 +8,65 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #0a0510; color: #f4f0fa; font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
-        .bg-card { background-color: #1a0f2e; }
-        .bg-input { background-color: #0f081c; }
-        .border-subtle { border-color: #3d2b5e; }
-        .text-subtle { color: #a79eb5; }
-        .tab-active { color: #d4af37; border-bottom: 2px solid #d4af37; }
-        .tab-inactive { color: #7e6b9c; }
+        body { 
+            background-color: #050110;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(93, 26, 227, 0.3) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(68, 15, 171, 0.25) 0%, transparent 40%);
+            background-attachment: fixed;
+            color: #f4f0fa; 
+            font-family: 'Outfit', system-ui, sans-serif; 
+            -webkit-tap-highlight-color: transparent; 
+            min-height: 100vh;
+            margin: 0;
+        }
+        .bg-card { 
+            background: rgba(26, 12, 56, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .bg-input { 
+            background: rgba(10, 4, 25, 0.5);
+        }
+        /* More subtle borders for glass effect */
+        .border-subtle { border-color: rgba(255, 255, 255, 0.08); }
+        .text-subtle { color: rgba(255, 255, 255, 0.65); }
+        .tab-active { color: #ffffff; border-bottom: 2px solid #ffffff; }
+        .tab-inactive { color: rgba(255, 255, 255, 0.5); }
         .hidden { display: none !important; }
         
         /* Custom scrollbar for dark theme */
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0a0510; }
-        ::-webkit-scrollbar-thumb { background: #3d2b5e; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #5a408a; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+        /* Theming Overrides (Purple & White Palette) */
+        .text-amber-400 { color: #A78BFA !important; }
+        .text-amber-500 { color: #8B5CF6 !important; }
+        .hover\:text-amber-300:hover { color: #C4B5FD !important; }
+        .hover\:text-amber-400:hover { color: #A78BFA !important; }
+        .bg-amber-500 { background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%) !important; color: #ffffff !important; font-weight: 600; }
+        .bg-amber-500 i { color: #ffffff !important; }
+        .hover\:bg-amber-400:hover { background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%) !important; }
+        .hover\:bg-amber-600:hover { background: linear-gradient(135deg, #6D28D9 0%, #4C1D95 100%) !important; }
+        .border-amber-500 { border-color: #8B5CF6 !important; }
+        .focus\:border-amber-500:focus { border-color: #8B5CF6 !important; outline: none; box-shadow: 0 0 0 1px #8B5CF6; }
+        .hover\:border-amber-500:hover { border-color: #8B5CF6 !important; }
+        .hover\:border-amber-500\/50:hover { border-color: rgba(139, 92, 246, 0.5) !important; color: #A78BFA !important; }
+
+        /* Hardcoded Hex Cleanup */
+        .bg-\[\#1a0f2e\] { background-color: rgba(26, 12, 56, 0.4) !important; backdrop-filter: blur(16px); }
+        .bg-\[\#0a0510\] { background-color: rgba(10, 4, 25, 0.6) !important; }
+        .bg-\[\#2d1b4e\] { background-color: rgba(45, 27, 78, 0.7) !important; backdrop-filter: blur(8px); }
+        .bg-\[\#3d2b5e\] { background-color: rgba(76, 43, 130, 0.5) !important; border: 1px solid rgba(255,255,255,0.08); }
+        .hover\:bg-\[\#3d2b5e\]:hover { background-color: rgba(255,255,255,0.1) !important; }
+        .border-\[\#0a0510\] { border-color: transparent !important; }
+        .text-\[\#3d2b5e\] { color: rgba(255, 255, 255, 0.15) !important; }
 
         /* Markdown styles */
         .markdown-body p { margin-bottom: 0.5em; }
@@ -33,9 +77,9 @@
     </style>
 </head>
 <body class="pb-24">
-    <header class="bg-[#1a0f2e] border-b border-subtle sticky top-0 z-20 shadow-md">
+    <header class="bg-[#1b0a33]/80 backdrop-blur-md border-b border-subtle sticky top-0 z-20 shadow-md">
         <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-            <h1 class="text-lg font-bold text-white tracking-tight">FitTrack Pro</h1>
+            <h1 class="text-xl font-bold text-white tracking-tight">FitTrack Pro</h1>
             <div class="flex gap-4 h-full items-center">
                 <div id="auth-container" class="mr-2"></div>
                 <button id="tab-workouts" class="h-full px-2 tab-active font-medium text-sm transition-colors">Workouts</button>
@@ -63,9 +107,14 @@
                     <button onclick="closeWorkout()" class="text-sm text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-2">
                         <i class="fas fa-arrow-left"></i> Back
                     </button>
-                    <button id="btn-delete-workout" onclick="deleteActiveWorkout()" class="hidden text-sm text-red-400 hover:text-red-300 transition-colors">
-                        <i class="fas fa-trash"></i> Delete
-                    </button>
+                    <div class="flex gap-3">
+                        <button id="btn-edit-workout" onclick="editActiveWorkout()" class="hidden text-sm text-amber-500 hover:text-amber-400 transition-colors">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button id="btn-delete-workout" onclick="deleteActiveWorkout()" class="hidden text-sm text-red-400 hover:text-red-300 transition-colors">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Search Bar -->
@@ -80,6 +129,14 @@
 
         <!-- Creator View -->
         <div id="creator-view" class="hidden space-y-4 animate-in fade-in duration-300">
+            <div class="flex gap-2">
+                <select id="c-template-select" onchange="loadTemplate(this.value)" class="flex-1 bg-input border border-subtle rounded px-3 py-3 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors shadow-sm">
+                    <option value="">Load from Database...</option>
+                </select>
+                <button onclick="saveAsTemplate()" class="bg-card border border-subtle hover:bg-[#3d2b5e] text-amber-500 hover:text-white px-4 rounded text-sm transition-colors shadow-sm whitespace-nowrap">
+                    <i class="fas fa-save"></i> Save to Database
+                </button>
+            </div>
             <select id="c-client-select" class="w-full bg-input border border-subtle rounded px-3 py-3 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors shadow-sm">
                 <option value="">Assign to Client...</option>
             </select>
@@ -104,7 +161,7 @@
             <textarea id="c-cooldown" placeholder="Add cooldown..." class="w-full bg-transparent text-sm text-subtle placeholder-gray-600 focus:outline-none resize-none h-16 mt-6 border-b border-subtle pt-2"></textarea>
             
             <div class="flex gap-3 mt-8">
-                <button onclick="saveWorkout()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded text-sm font-medium transition-colors shadow-sm">Save Workout</button>
+                <button id="btn-save-workout" onclick="saveWorkout()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded text-sm font-medium transition-colors shadow-sm">Save Workout</button>
                 <button onclick="clearCreator()" class="bg-card border border-subtle hover:bg-[#3d2b5e] text-white px-6 py-3 rounded text-sm font-medium transition-colors">Clear</button>
             </div>
         </div>
@@ -296,10 +353,12 @@
         const ADMIN_EMAIL = 'franny.lee@gmail.com';
         let isAdmin = false;
         let allUsers = [];
+        let templates = [];
         let currentViewUid = null;
         let workouts = [];
         let creatorExercises = [];
         let activeWorkoutId = null;
+        let editingWorkoutData = null;
         let currentUser = null;
         let unsubscribeWorkouts = null;
 
@@ -315,6 +374,7 @@
         const authContainer = document.getElementById('auth-container');
         const adminClientSelector = document.getElementById('admin-client-selector');
         const btnDeleteWorkout = document.getElementById('btn-delete-workout');
+        const btnEditWorkout = document.getElementById('btn-edit-workout');
 
         // Auth Logic
         window.login = async () => {
@@ -372,6 +432,7 @@
                     tabCreator.classList.remove('hidden');
                     adminClientSelector.classList.remove('hidden');
                     btnDeleteWorkout.classList.remove('hidden');
+                    btnEditWorkout.classList.remove('hidden');
                     
                     // Fetch all users for admin dropdowns
                     onSnapshot(collection(db, 'users'), (snapshot) => {
@@ -382,6 +443,11 @@
                         alert("Failed to fetch users: " + error.message);
                     });
                     
+                    onSnapshot(collection(db, 'workoutTemplates'), (snapshot) => {
+                        templates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        renderTemplateDropdown();
+                    });
+                    
                     // Admin doesn't auto-subscribe until they pick a client
                     workouts = [];
                     renderWorkoutsList();
@@ -389,6 +455,7 @@
                     tabCreator.classList.add('hidden');
                     adminClientSelector.classList.add('hidden');
                     btnDeleteWorkout.classList.add('hidden');
+                    btnEditWorkout.classList.add('hidden');
                     currentViewUid = userEmail;
                     subscribeToWorkouts(userEmail);
                 }
@@ -398,6 +465,7 @@
                 tabCreator.classList.add('hidden');
                 adminClientSelector.classList.add('hidden');
                 btnDeleteWorkout.classList.add('hidden');
+                btnEditWorkout.classList.add('hidden');
                 
                 authContainer.innerHTML = `
                     <button onclick="login()" class="text-sm bg-amber-500 hover:bg-amber-400 text-white px-3 py-1 rounded transition-colors">Login</button>
@@ -427,6 +495,68 @@
             
             if (wVal) wSelect.value = wVal;
             if (cVal) cSelect.value = cVal;
+        };
+
+        window.renderTemplateDropdown = () => {
+            const tSelect = document.getElementById('c-template-select');
+            if (!tSelect) return;
+            const val = tSelect.value;
+            const options = `<option value="">Load from Database...</option>` + 
+                templates.map(t => `<option value="${t.id}">${t.title}</option>`).join('');
+            tSelect.innerHTML = options;
+            if (val) tSelect.value = val;
+        };
+
+        window.loadTemplate = (id) => {
+            if (!id) return;
+            const t = templates.find(temp => temp.id === id);
+            if (!t) return;
+            
+            document.getElementById('c-title').value = t.title || '';
+            document.getElementById('c-warmup').value = t.warmup || '';
+            document.getElementById('c-notes').value = t.notes || '';
+            document.getElementById('c-cooldown').value = t.cooldown || '';
+            
+            // Populate exercises but give them new IDs so they can be modified
+            creatorExercises = (t.exercises || []).map(ex => ({ ...ex, id: uuid() }));
+            renderCreatorExercises();
+            
+            // Keep editingWorkoutData as null since we're loading a template for a new assignment
+            editingWorkoutData = null;
+            document.getElementById('btn-save-workout').innerText = 'Save Workout';
+        };
+
+        window.saveAsTemplate = async () => {
+            if (!isAdmin) return;
+            
+            const title = document.getElementById('c-title').value.trim() || 'Untitled Template';
+            const notes = document.getElementById('c-notes').value.trim();
+            const warmup = document.getElementById('c-warmup').value.trim();
+            const cooldown = document.getElementById('c-cooldown').value.trim();
+            
+            const validExercises = creatorExercises.filter(ex => ex.name.trim() !== '' || ex.prescription.trim() !== '');
+            
+            if (validExercises.length === 0 && !notes && !warmup && !cooldown) {
+                alert('Please add some content before saving to the database.');
+                return;
+            }
+
+            const templateId = uuid();
+            const templateData = {
+                title,
+                notes,
+                warmup,
+                cooldown,
+                date: new Date().toISOString(),
+                exercises: JSON.parse(JSON.stringify(validExercises))
+            };
+
+            try {
+                await setDoc(doc(db, 'workoutTemplates', templateId), templateData);
+                alert("Saved to Database successfully!");
+            } catch (error) {
+                handleFirestoreError(error, OperationType.WRITE, 'workoutTemplates/' + templateId);
+            }
         };
 
         window.selectClientWorkouts = (email) => {
@@ -645,19 +775,24 @@
                 return;
             }
 
-            const workoutId = uuid();
+            const workoutId = editingWorkoutData && editingWorkoutData.id ? editingWorkoutData.id : uuid();
             const workout = {
                 userEmail: targetEmail,
-                date: new Date().toISOString(),
+                date: editingWorkoutData && editingWorkoutData.date ? editingWorkoutData.date : new Date().toISOString(),
                 title,
                 notes,
                 warmup,
                 cooldown,
                 exercises: JSON.parse(JSON.stringify(validExercises)),
-                results: {}
+                results: editingWorkoutData && editingWorkoutData.results ? editingWorkoutData.results : {},
+                ...(editingWorkoutData && editingWorkoutData.completed ? { completed: true } : {})
             };
 
             try {
+                // If the target client changed during editing, delete the old document
+                if (editingWorkoutData && editingWorkoutData.originalEmail && editingWorkoutData.originalEmail !== targetEmail) {
+                    await deleteDoc(doc(db, 'users', editingWorkoutData.originalEmail, 'workouts', workoutId));
+                }
                 await setDoc(doc(db, 'users', targetEmail, 'workouts', workoutId), workout);
                 clearCreator();
                 
@@ -671,12 +806,46 @@
         };
 
         window.clearCreator = () => {
+            editingWorkoutData = null;
             document.getElementById('c-title').value = '';
             document.getElementById('c-notes').value = '';
             document.getElementById('c-warmup').value = '';
             document.getElementById('c-cooldown').value = '';
+            document.getElementById('btn-save-workout').innerText = 'Save Workout';
             creatorExercises = [];
             renderCreatorExercises();
+        };
+
+        window.editActiveWorkout = () => {
+            if (!isAdmin || !activeWorkoutId || !currentViewUid) return;
+            const w = workouts.find(w => w.id === activeWorkoutId);
+            if (!w) return;
+
+            editingWorkoutData = {
+                id: w.id,
+                date: w.date,
+                results: w.results,
+                completed: w.completed,
+                originalEmail: currentViewUid
+            };
+
+            // Switch to Creator tab
+            switchTab('creator');
+            
+            // Populate fields
+            document.getElementById('c-client-select').value = currentViewUid;
+            document.getElementById('c-title').value = w.title || '';
+            document.getElementById('c-warmup').value = w.warmup || '';
+            document.getElementById('c-notes').value = w.notes || '';
+            document.getElementById('c-cooldown').value = w.cooldown || '';
+            
+            // Populate exercises
+            creatorExercises = JSON.parse(JSON.stringify(w.exercises || []));
+            renderCreatorExercises();
+            
+            // Provide visual feedback it's an edit
+            document.getElementById('btn-save-workout').innerText = 'Update Workout';
+            document.getElementById('c-title').focus();
         };
 
         // --- Workouts List & Logger Logic ---
@@ -704,16 +873,18 @@
                 return;
             }
 
-            listWorkouts.innerHTML = workouts.map(w => `
+            listWorkouts.innerHTML = workouts.map(w => {
+                const isCompleted = w.completed ? '<i class="fas fa-check-circle text-green-500 ml-2" title="Completed"></i>' : '';
+                return `
                 <div class="bg-card border border-subtle rounded-lg p-4 cursor-pointer hover:border-amber-500 transition-colors shadow-sm" onclick="openWorkout('${w.id}')">
-                    <h3 class="font-bold text-white text-lg">${w.title}</h3>
+                    <h3 class="font-bold text-white text-lg flex items-center">${w.title}${isCompleted}</h3>
                     <p class="text-xs text-subtle mt-1.5 flex items-center gap-2">
                         <i class="far fa-calendar-alt"></i> ${new Date(w.date).toLocaleDateString()} 
                         <span>•</span> 
                         <i class="fas fa-dumbbell"></i> ${w.exercises.length} exercises
                     </p>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         window.deleteActiveWorkout = async () => {
@@ -742,6 +913,21 @@
             renderWorkoutsList();
         };
 
+        window.finishWorkout = async () => {
+            if (!confirm("Are you sure you want to finish this workout? You won't be able to edit it later.")) return;
+            
+            if (!currentUser || !activeWorkoutId || !currentViewUid) return;
+            const w = workouts.find(w => w.id === activeWorkoutId);
+            if (w) {
+                try {
+                    await setDoc(doc(db, 'users', currentViewUid, 'workouts', activeWorkoutId), { completed: true }, { merge: true });
+                    closeWorkout();
+                } catch (error) {
+                    handleFirestoreError(error, OperationType.UPDATE, `users/${currentViewUid}/workouts/${activeWorkoutId}`);
+                }
+            }
+        };
+
         window.filterExercises = (query) => {
             const q = query.toLowerCase();
             const cards = document.querySelectorAll('.exercise-card');
@@ -758,7 +944,7 @@
         window.updateResult = async (exId, inputEl) => {
             if (!currentUser || !activeWorkoutId || !currentViewUid) return;
             const w = workouts.find(w => w.id === activeWorkoutId);
-            if (w) {
+            if (w && !w.completed) {
                 // Update Firestore
                 const updatedResults = { ...w.results, [exId]: inputEl.value };
                 try {
@@ -772,7 +958,7 @@
         window.addSet = async (exId) => {
             if (!currentUser || !activeWorkoutId || !currentViewUid) return;
             const w = workouts.find(w => w.id === activeWorkoutId);
-            if (w) {
+            if (w && !w.completed) {
                 let sets = w.results[exId];
                 if (!Array.isArray(sets)) {
                     // If it was a string, we might want to preserve it or just clear it. 
@@ -792,7 +978,7 @@
         window.removeSet = async (exId, setIndex) => {
             if (!currentUser || !activeWorkoutId || !currentViewUid) return;
             const w = workouts.find(w => w.id === activeWorkoutId);
-            if (w) {
+            if (w && !w.completed) {
                 let sets = [...(w.results[exId] || [])];
                 sets.splice(setIndex, 1);
                 const updatedResults = { ...w.results, [exId]: sets };
@@ -807,7 +993,7 @@
         window.updateSet = async (exId, setIndex, field, value) => {
             if (!currentUser || !activeWorkoutId || !currentViewUid) return;
             const w = workouts.find(w => w.id === activeWorkoutId);
-            if (w) {
+            if (w && !w.completed) {
                 let sets = JSON.parse(JSON.stringify(w.results[exId] || []));
                 if (sets[setIndex]) {
                     sets[setIndex][field] = value;
@@ -824,6 +1010,23 @@
         function renderActiveWorkout() {
             const w = workouts.find(w => w.id === activeWorkoutId);
             if (!w) return;
+
+            // Hide action buttons if the workout is completed, or if not an admin
+            const btnEdit = document.getElementById('btn-edit-workout');
+            const btnDelete = document.getElementById('btn-delete-workout');
+            if (btnEdit && btnDelete) {
+                if (isAdmin) {
+                    btnDelete.classList.remove('hidden');
+                    if (!w.completed) {
+                        btnEdit.classList.remove('hidden');
+                    } else {
+                        btnEdit.classList.add('hidden');
+                    }
+                } else {
+                    btnEdit.classList.add('hidden');
+                    btnDelete.classList.add('hidden');
+                }
+            }
 
             let html = `
                 <div class="mb-6">
@@ -878,17 +1081,19 @@
                                         <span class="text-[10px] font-bold text-gray-500 w-4">${idx + 1}</span>
                                         <div class="flex-1 grid grid-cols-2 gap-2">
                                             <div class="relative">
-                                                <input type="number" placeholder="kg" value="${s.weight}" oninput="updateSet('${ex.id}', ${idx}, 'weight', this.value)" class="w-full bg-input border border-subtle rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors">
+                                                <input type="number" placeholder="kg" value="${s.weight}" oninput="updateSet('${ex.id}', ${idx}, 'weight', this.value)" ${w.completed ? 'disabled' : ''} class="w-full bg-input border border-subtle rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors ${w.completed ? 'opacity-50 cursor-not-allowed' : ''}">
                                                 <span class="absolute right-2 top-1.5 text-[9px] text-gray-600">kg</span>
                                             </div>
                                             <div class="relative">
-                                                <input type="number" placeholder="reps" value="${s.reps}" oninput="updateSet('${ex.id}', ${idx}, 'reps', this.value)" class="w-full bg-input border border-subtle rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors">
+                                                <input type="number" placeholder="reps" value="${s.reps}" oninput="updateSet('${ex.id}', ${idx}, 'reps', this.value)" ${w.completed ? 'disabled' : ''} class="w-full bg-input border border-subtle rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors ${w.completed ? 'opacity-50 cursor-not-allowed' : ''}">
                                                 <span class="absolute right-2 top-1.5 text-[9px] text-gray-600">reps</span>
                                             </div>
                                         </div>
+                                        ${!w.completed ? `
                                         <button onclick="removeSet('${ex.id}', ${idx})" class="text-gray-600 hover:text-red-400 transition-colors px-1">
                                             <i class="fas fa-times text-xs"></i>
                                         </button>
+                                        ` : ''}
                                     </div>
                                 `).join('')}
                                 
@@ -896,9 +1101,11 @@
                                     <div class="text-xs text-yellow-500/70 italic mb-2 px-1">Legacy note: ${resultVal}</div>
                                 ` : ''}
 
+                                ${!w.completed ? `
                                 <button onclick="addSet('${ex.id}')" class="w-full py-1.5 border border-dashed border-subtle rounded text-[10px] font-bold text-gray-500 hover:text-amber-400 hover:border-amber-500/50 transition-all uppercase tracking-wider">
                                     + Add Set
                                 </button>
+                                ` : ''}
                             </div>
                         </div>
                         ${isLinked ? `
@@ -917,6 +1124,24 @@
                     <div class="mt-8 pt-6 border-t border-subtle">
                         <span class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Cooldown</span>
                         <div class="text-sm text-subtle whitespace-pre-wrap leading-relaxed">${w.cooldown}</div>
+                    </div>
+                `;
+            }
+
+            if (!w.completed) {
+                html += `
+                    <div class="mt-8 pt-6 border-t border-subtle">
+                        <button onclick="finishWorkout()" class="w-full bg-amber-500 hover:bg-amber-600 text-white py-3 rounded text-sm font-medium transition-colors shadow-sm flex justify-center items-center gap-2">
+                            <i class="fas fa-check-circle"></i> Finish Workout
+                        </button>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="mt-8 pt-6 border-t border-subtle text-center">
+                        <span class="inline-flex items-center gap-2 text-green-500 font-medium text-sm bg-green-500/10 px-4 py-2 rounded-full">
+                            <i class="fas fa-check-circle"></i> Workout Completed
+                        </span>
                     </div>
                 `;
             }
