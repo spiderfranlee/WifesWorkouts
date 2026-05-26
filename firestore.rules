@@ -6,16 +6,12 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    function isEmailVerified() {
-      return request.auth.token.email_verified == true;
-    }
-
     function isAdmin() {
-      return isAuthenticated() && isEmailVerified() && request.auth.token.email == 'franny.lee@gmail.com';
+      return isAuthenticated() && request.auth.token.email == 'franny.lee@gmail.com';
     }
 
     function isOwner(emailId) {
-      return isAuthenticated() && isEmailVerified() && request.auth.token.email == emailId;
+      return isAuthenticated() && request.auth.token.email == emailId;
     }
 
     match /users/{emailId} {

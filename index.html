@@ -278,6 +278,27 @@
         </div>
     </div>
 
+    <!-- Video / GIF Modal -->
+    <div id="gif-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div class="bg-card border border-subtle w-full max-w-md rounded-xl shadow-2xl overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-subtle flex justify-between items-center bg-[#1a0f2e]">
+                <div>
+                    <h3 id="gif-title" class="text-white font-bold text-lg">Exercise Demo</h3>
+                    <p class="text-xs text-subtle text-amber-500">Powered by ExerciseDB</p>
+                </div>
+                <button onclick="closeGifModal()" class="text-gray-400 hover:text-white transition-colors p-2">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="gif-content" class="p-4 flex flex-col items-center justify-center min-h-[250px]">
+                <div class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-amber-500 text-2xl mb-4"></i>
+                    <p class="text-sm text-subtle" id="gif-loading-text">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script type="importmap">
         {
             "imports": {
@@ -441,11 +462,15 @@
                     }, (error) => {
                         console.error("Error fetching users:", error);
                         alert("Failed to fetch users: " + error.message);
+                        handleFirestoreError(error, OperationType.LIST, 'users');
                     });
                     
                     onSnapshot(collection(db, 'workoutTemplates'), (snapshot) => {
                         templates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         renderTemplateDropdown();
+                    }, (error) => {
+                        console.error("Error fetching templates:", error);
+                        handleFirestoreError(error, OperationType.LIST, 'workoutTemplates');
                     });
                     
                     // Admin doesn't auto-subscribe until they pick a client
@@ -594,6 +619,7 @@
             }, (error) => {
                 console.error("Error fetching workouts:", error);
                 alert("Error fetching workouts: " + error.message);
+                handleFirestoreError(error, OperationType.LIST, 'users/'+email+'/workouts');
             });
         }
 
@@ -1107,6 +1133,9 @@
                                         <button onclick="showExerciseHistory('${ex.name.replace(/'/g, "\\'")}')" class="hover:text-white transition-colors" title="History">
                                             <i class="fas fa-history"></i>
                                         </button>
+                                        <button onclick="showExerciseGif('${ex.name.replace(/'/g, "\\'")}')" class="hover:text-amber-500 transition-colors" title="Watch Demo">
+                                            <i class="fas fa-play-circle"></i>
+                                        </button>
                                     </div>
                                 </div>
                                 <p class="text-xs text-subtle mt-2 mb-3 leading-relaxed">${ex.prescription}</p>
@@ -1509,6 +1538,104 @@
 
         window.closeHistory = () => {
             document.getElementById('history-modal').classList.add('hidden');
+        };
+
+        // --- GIF Modal Logic ---
+        window.closeGifModal = () => {
+            document.getElementById('gif-modal').classList.add('hidden');
+            const content = document.getElementById('gif-content');
+            content.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-amber-500 text-2xl mb-4"></i>
+                    <p class="text-sm text-subtle" id="gif-loading-text">Loading...</p>
+                </div>
+            `;
+        };
+
+        window.showExerciseGif = async (exerciseName) => {
+            const modal = document.getElementById('gif-modal');
+            const title = document.getElementById('gif-title');
+            const content = document.getElementById('gif-content');
+            
+            title.innerText = exerciseName;
+            modal.classList.remove('hidden');
+            
+            // Hardcoded key as requested by user
+            const finalKey = "4c43e9f7c0msh0823e5ba0929473p1eb012jsndb16e82fccc1";
+
+            try {
+                let foundEx = null;
+                let cursor = '';
+                let hasNext = true;
+                let pagesFetched = 0;
+                
+                const searchName = exerciseName.toLowerCase();
+                
+                // Fetch paginated exercises until we find a match
+                while (hasNext && pagesFetched < 15) {
+                    pagesFetched++;
+                    const url = `https://edb-with-videos-and-images-by-ascendapi.p.rapidapi.com/api/v1/exercises?limit=50${cursor ? '&cursor=' + cursor : ''}`;
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'x-rapidapi-key': finalKey,
+                            'x-rapidapi-host': 'edb-with-videos-and-images-by-ascendapi.p.rapidapi.com'
+                        }
+                    }).catch(err => {
+                        // RapidAPI 429s often trigger CORS errors natively
+                        throw new Error('CORS or Network Error (Possible Rate Limit Exceeded): ' + err.message);
+                    });
+
+                    if (response.status === 429) {
+                        content.innerHTML = '<div class="text-center p-4"><p class="text-amber-500 mb-2"><i class="fas fa-exclamation-triangle text-2xl"></i></p><p class="text-sm text-subtle">ExerciseDB API rate limit exceeded. Please wait an hour for the quota to reset.</p></div>';
+                        return;
+                    }
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const json = await response.json();
+                    
+                    // Sometimes APIs return 200 OK but with an error message
+                    if (json.message && json.message.includes("rate limit")) {
+                        content.innerHTML = '<div class="text-center p-4"><p class="text-amber-500 mb-2"><i class="fas fa-exclamation-triangle text-2xl"></i></p><p class="text-sm text-subtle">Rate limit exceeded.</p></div>';
+                        return;
+                    }
+
+                    const data = json.data || [];
+                    
+                    // Match exercise
+                    foundEx = data.find(e => e.name.toLowerCase().includes(searchName) || searchName.includes(e.name.toLowerCase()));
+                    
+                    if (foundEx) break;
+                    
+                    if (json.meta && json.meta.hasNextPage && json.meta.nextCursor && json.meta.nextCursor !== cursor) {
+                        cursor = json.meta.nextCursor;
+                    } else {
+                        hasNext = false;
+                    }
+                }
+
+                if (foundEx) {
+                    content.innerHTML = `
+                        <img src="${foundEx.imageUrl}" alt="${foundEx.name}" class="w-full max-w-[300px] h-auto rounded-md shadow-md bg-[#1a0f2e]">
+                        <div class="mt-4 w-full">
+                            <h4 class="text-sm font-bold text-white capitalize mb-1">${foundEx.name}</h4>
+                            <div class="flex flex-wrap gap-2 text-xs text-subtle">
+                                ${foundEx.targetMuscles && foundEx.targetMuscles.length > 0 ? `<span class="bg-[#3d2b5e] px-2 py-1 rounded">Target: ${foundEx.targetMuscles[0]}</span>` : ''}
+                                ${foundEx.bodyParts && foundEx.bodyParts.length > 0 ? `<span class="bg-[#3d2b5e] px-2 py-1 rounded">Body Part: ${foundEx.bodyParts[0]}</span>` : ''}
+                                ${foundEx.equipments && foundEx.equipments.length > 0 ? `<span class="bg-[#3d2b5e] px-2 py-1 rounded">Equipment: ${foundEx.equipments[0]}</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    content.innerHTML = '<div class="text-center p-4"><p class="text-subtle">No video found for this exercise.</p></div>';
+                }
+            } catch (error) {
+                console.error("Error fetching GIF:", error);
+                content.innerHTML = '<div class="text-center p-4"><p class="text-red-400">Failed to load video.</p></div>';
+            }
         };
     </script>
 </body>

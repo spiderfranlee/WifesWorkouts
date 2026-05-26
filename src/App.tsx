@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Activity, List, Dumbbell, Trash2, CheckCircle2 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 type SetType = 'Single set' | 'Superset' | 'Triset';
 
@@ -126,6 +127,22 @@ export default function App() {
     setLogs(newLogs);
     setSessionData({});
     alert('Workout saved successfully!');
+  };
+
+  const getProgressData = (exerciseId: string) => {
+    const exLogs = logs[exerciseId] || [];
+    if (exLogs.length === 0) return [];
+    
+    const sortedLogs = [...exLogs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const recentLogs = sortedLogs.slice(-5);
+    
+    return recentLogs.map((log) => {
+      const maxWeight = Math.max(0, ...log.sets.map(s => parseFloat(s.weight) || 0));
+      return {
+        date: new Date(log.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        weight: maxWeight
+      };
+    });
   };
 
   return (
@@ -263,6 +280,8 @@ export default function App() {
               <div className="space-y-6">
                 {exercises.map((ex) => {
                   const exData = sessionData[ex.id] || [];
+                  const chartData = getProgressData(ex.id);
+                  const hasHistory = chartData.length > 0;
                   
                   return (
                     <div key={ex.id} className="bg-white p-5 rounded-2xl shadow-sm border border-zinc-100">
@@ -300,6 +319,38 @@ export default function App() {
                           </div>
                         ))}
                       </div>
+
+                      {hasHistory && (
+                        <div className="mt-8 pt-6 border-t border-zinc-100">
+                          <h4 className="text-sm font-bold text-zinc-900 mb-4 tracking-tight flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-emerald-600" />
+                            Recent Progress
+                          </h4>
+                          <div className="h-40 w-full -ml-4">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={chartData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
+                                <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} tickMargin={8} minTickGap={15} />
+                                <YAxis fontSize={10} tickLine={false} axisLine={false} width={40} />
+                                <Tooltip 
+                                  contentStyle={{ borderRadius: '12px', border: '1px solid #f4f4f5', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                  labelStyle={{ fontSize: '12px', color: '#71717a', fontWeight: 500, marginBottom: '4px' }}
+                                  itemStyle={{ fontSize: '14px', color: '#10b981', fontWeight: 700 }}
+                                />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey="weight" 
+                                  name="Max Weight"
+                                  stroke="#10b981" 
+                                  strokeWidth={3}
+                                  dot={{ fill: '#10b981', strokeWidth: 2, r: 4, stroke: '#fff' }}
+                                  activeDot={{ r: 6, strokeWidth: 0 }}
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
