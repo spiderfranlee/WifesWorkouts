@@ -1081,11 +1081,11 @@
                                         <span class="text-[10px] font-bold text-gray-500 w-4">${idx + 1}</span>
                                         <div class="flex-1 grid grid-cols-2 gap-2">
                                             <div class="relative">
-                                                <input type="number" placeholder="kg" value="${s.weight}" oninput="updateSet('${ex.id}', ${idx}, 'weight', this.value)" ${w.completed ? 'disabled' : ''} class="w-full bg-input border border-subtle rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors ${w.completed ? 'opacity-50 cursor-not-allowed' : ''}">
+                                                <input type="number" placeholder="kg" value="${s.weight}" onchange="updateSet('${ex.id}', ${idx}, 'weight', this.value)" ${w.completed ? 'disabled' : ''} class="w-full bg-input border border-subtle rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors ${w.completed ? 'opacity-50 cursor-not-allowed' : ''}">
                                                 <span class="absolute right-2 top-1.5 text-[9px] text-gray-600">kg</span>
                                             </div>
                                             <div class="relative">
-                                                <input type="number" placeholder="reps" value="${s.reps}" oninput="updateSet('${ex.id}', ${idx}, 'reps', this.value)" ${w.completed ? 'disabled' : ''} class="w-full bg-input border border-subtle rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors ${w.completed ? 'opacity-50 cursor-not-allowed' : ''}">
+                                                <input type="number" placeholder="reps" value="${s.reps}" onchange="updateSet('${ex.id}', ${idx}, 'reps', this.value)" ${w.completed ? 'disabled' : ''} class="w-full bg-input border border-subtle rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors ${w.completed ? 'opacity-50 cursor-not-allowed' : ''}">
                                                 <span class="absolute right-2 top-1.5 text-[9px] text-gray-600">reps</span>
                                             </div>
                                         </div>
