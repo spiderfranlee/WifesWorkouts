@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FitTrack Pro</title>
+    <title>Wife's Workouts</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -13,73 +13,82 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { 
-            background-color: #050110;
+            background-color: #000000;
             background-image: 
-                radial-gradient(circle at 10% 20%, rgba(93, 26, 227, 0.3) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(68, 15, 171, 0.25) 0%, transparent 40%);
+                radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 100%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
             background-attachment: fixed;
-            color: #f4f0fa; 
+            color: #ffffff; 
             font-family: 'Outfit', system-ui, sans-serif; 
             -webkit-tap-highlight-color: transparent; 
             min-height: 100vh;
             margin: 0;
         }
         .bg-card { 
-            background: rgba(26, 12, 56, 0.4);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: #0a0a0a;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+            border-radius: 1.5rem;
         }
         .bg-input { 
-            background: rgba(10, 4, 25, 0.5);
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 1rem;
         }
-        /* More subtle borders for glass effect */
-        .border-subtle { border-color: rgba(255, 255, 255, 0.08); }
-        .text-subtle { color: rgba(255, 255, 255, 0.65); }
-        .tab-active { color: #ffffff; border-bottom: 2px solid #ffffff; }
-        .tab-inactive { color: rgba(255, 255, 255, 0.5); }
+        .border-subtle { border-color: rgba(255, 255, 255, 0.05); }
+        .text-subtle { color: #a1a1aa; }
+        .tab-active { color: #ffffff; border-bottom: 2px solid #8B5CF6; }
+        .tab-inactive { color: #71717a; }
         .hidden { display: none !important; }
         
         /* Custom scrollbar for dark theme */
-        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 8px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
-        /* Theming Overrides (Purple & White Palette) */
-        .text-amber-400 { color: #A78BFA !important; }
+        /* Theming Overrides (Neon Purple Palette) */
+        .text-amber-400 { color: #c4b5fd !important; }
         .text-amber-500 { color: #8B5CF6 !important; }
-        .hover\:text-amber-300:hover { color: #C4B5FD !important; }
-        .hover\:text-amber-400:hover { color: #A78BFA !important; }
-        .bg-amber-500 { background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%) !important; color: #ffffff !important; font-weight: 600; }
+        .hover\:text-amber-300:hover { color: #ddd6fe !important; }
+        .hover\:text-amber-400:hover { color: #c4b5fd !important; }
+        .bg-amber-500 { background: #8B5CF6 !important; color: #ffffff !important; font-weight: 500; border-radius: 1rem; box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
         .bg-amber-500 i { color: #ffffff !important; }
-        .hover\:bg-amber-400:hover { background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%) !important; }
-        .hover\:bg-amber-600:hover { background: linear-gradient(135deg, #6D28D9 0%, #4C1D95 100%) !important; }
+        .hover\:bg-amber-400:hover { background: #a78bfa !important; box-shadow: 0 0 20px rgba(139, 92, 246, 0.6); }
+        .hover\:bg-amber-600:hover { background: #7c3aed !important; }
         .border-amber-500 { border-color: #8B5CF6 !important; }
-        .focus\:border-amber-500:focus { border-color: #8B5CF6 !important; outline: none; box-shadow: 0 0 0 1px #8B5CF6; }
+        .focus\:border-amber-500:focus { border-color: #8B5CF6 !important; outline: none; box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3); }
         .hover\:border-amber-500:hover { border-color: #8B5CF6 !important; }
-        .hover\:border-amber-500\/50:hover { border-color: rgba(139, 92, 246, 0.5) !important; color: #A78BFA !important; }
+        .hover\:border-amber-500\/50:hover { border-color: rgba(139, 92, 246, 0.5) !important; color: #c4b5fd !important; }
 
         /* Hardcoded Hex Cleanup */
-        .bg-\[\#1a0f2e\] { background-color: rgba(26, 12, 56, 0.4) !important; backdrop-filter: blur(16px); }
-        .bg-\[\#0a0510\] { background-color: rgba(10, 4, 25, 0.6) !important; }
-        .bg-\[\#2d1b4e\] { background-color: rgba(45, 27, 78, 0.7) !important; backdrop-filter: blur(8px); }
-        .bg-\[\#3d2b5e\] { background-color: rgba(76, 43, 130, 0.5) !important; border: 1px solid rgba(255,255,255,0.08); }
-        .hover\:bg-\[\#3d2b5e\]:hover { background-color: rgba(255,255,255,0.1) !important; }
+        .bg-\[\#1a0f2e\] { background-color: #0a0a0a !important; }
+        .bg-\[\#0a0510\] { background-color: #050505 !important; border-radius: 1rem; }
+        .bg-\[\#2d1b4e\] { background-color: rgba(139, 92, 246, 0.1) !important; }
+        .bg-\[\#3d2b5e\] { background-color: rgba(139, 92, 246, 0.05) !important; border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 1rem; }
+        .hover\:bg-\[\#3d2b5e\]:hover { background-color: rgba(139, 92, 246, 0.15) !important; }
         .border-\[\#0a0510\] { border-color: transparent !important; }
-        .text-\[\#3d2b5e\] { color: rgba(255, 255, 255, 0.15) !important; }
+        .text-\[\#3d2b5e\] { color: rgba(255, 255, 255, 0.2) !important; }
+
+        /* General element rounding to match reference image */
+        input, select, textarea, button { border-radius: 1rem; }
+        option { background-color: #0a0a0a; color: #ffffff; }
+        .rounded, .rounded-md, .rounded-lg, .rounded-xl { border-radius: 1.5rem !important; }
+        
+        /* Specific header transparency to blend */
+        header { background: rgba(0,0,0,0.7) !important; border-bottom: 1px solid rgba(255,255,255,0.05) !important;}
 
         /* Markdown styles */
-        .markdown-body p { margin-bottom: 0.5em; }
+        .markdown-body p { margin-bottom: 0.5em; font-weight: 300; }
         .markdown-body p:last-child { margin-bottom: 0; }
         .markdown-body ul { list-style-type: disc; margin-left: 1.5em; margin-bottom: 0.5em; }
         .markdown-body ol { list-style-type: decimal; margin-left: 1.5em; margin-bottom: 0.5em; }
-        .markdown-body strong { font-weight: 600; color: #fff; }
+        .markdown-body strong { font-weight: 500; color: #fff; }
     </style>
 </head>
 <body class="pb-24">
     <header class="bg-[#1b0a33]/80 backdrop-blur-md border-b border-subtle sticky top-0 z-20 shadow-md">
         <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-            <h1 class="text-xl font-bold text-white tracking-tight">FitTrack Pro</h1>
+            <h1 class="text-xl font-bold text-white tracking-tight">Wife's Workouts</h1>
             <div class="flex gap-4 h-full items-center">
                 <div id="auth-container" class="mr-2"></div>
                 <button id="tab-dashboard" class="hidden h-full px-2 tab-inactive font-medium text-sm transition-colors">Dashboard</button>
@@ -161,11 +170,11 @@
             <select id="c-client-select" class="w-full bg-input border border-subtle rounded px-3 py-3 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors shadow-sm">
                 <option value="">Assign to Client...</option>
             </select>
-            <input type="text" id="c-title" placeholder="Workout Title (e.g. Full-Body Balance)" class="w-full bg-transparent text-xl font-bold text-white placeholder-gray-500 focus:outline-none border-b border-subtle pb-2">
+            <input type="text" id="c-title" placeholder="Workout Title (e.g. Full-Body Balance)" class="w-full bg-transparent text-xl font-bold text-white placeholder-gray-400 focus:outline-none border-b border-subtle pb-2">
             
             <div class="space-y-3 mt-4">
-                <textarea id="c-warmup" placeholder="Warm-up Instructions..." class="w-full bg-input border border-subtle rounded px-3 py-2 text-sm text-subtle placeholder-gray-600 focus:outline-none focus:border-amber-500 resize-none h-20 transition-colors"></textarea>
-                <textarea id="c-notes" placeholder="General Advice / Coach's Notes..." class="w-full bg-input border border-subtle rounded px-3 py-2 text-sm text-subtle placeholder-gray-600 focus:outline-none focus:border-amber-500 resize-none h-20 transition-colors"></textarea>
+                <textarea id="c-warmup" placeholder="Warm-up Instructions..." class="w-full bg-input border border-subtle rounded px-3 py-2 text-sm text-subtle placeholder-gray-400 focus:outline-none focus:border-amber-500 resize-none h-20 transition-colors"></textarea>
+                <textarea id="c-notes" placeholder="General Advice / Coach's Notes..." class="w-full bg-input border border-subtle rounded px-3 py-2 text-sm text-subtle placeholder-gray-400 focus:outline-none focus:border-amber-500 resize-none h-20 transition-colors"></textarea>
             </div>
             
             <div id="c-exercises" class="space-y-4 mt-4"></div>
@@ -179,7 +188,7 @@
                 </button>
             </div>
 
-            <textarea id="c-cooldown" placeholder="Add cooldown..." class="w-full bg-transparent text-sm text-subtle placeholder-gray-600 focus:outline-none resize-none h-16 mt-6 border-b border-subtle pt-2"></textarea>
+            <textarea id="c-cooldown" placeholder="Add cooldown..." class="w-full bg-transparent text-sm text-subtle placeholder-gray-400 focus:outline-none resize-none h-16 mt-6 border-b border-subtle pt-2"></textarea>
             
             <div class="flex gap-3 mt-8">
                 <button id="btn-save-workout" onclick="saveWorkout()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded text-sm font-medium transition-colors shadow-sm">Save Workout</button>
