@@ -82,6 +82,7 @@
             <h1 class="text-xl font-bold text-white tracking-tight">FitTrack Pro</h1>
             <div class="flex gap-4 h-full items-center">
                 <div id="auth-container" class="mr-2"></div>
+                <button id="tab-dashboard" class="hidden h-full px-2 tab-inactive font-medium text-sm transition-colors">Dashboard</button>
                 <button id="tab-workouts" class="h-full px-2 tab-active font-medium text-sm transition-colors">Workouts</button>
                 <button id="tab-creator" class="hidden h-full px-2 tab-inactive font-medium text-sm transition-colors">Creator</button>
             </div>
@@ -89,6 +90,26 @@
     </header>
 
     <main class="max-w-2xl mx-auto p-4" id="app-container">
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="hidden space-y-6 animate-in fade-in duration-300">
+            <h2 class="text-2xl font-bold text-white mb-4">Dashboard</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="bg-card border border-subtle rounded-xl p-4 shadow-sm">
+                    <h3 class="text-sm font-medium text-amber-500 mb-2">Estimated 1RM (Top Exercises)</h3>
+                    <div id="dashboard-1rm-list" class="space-y-2 mt-4 text-sm">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+                <div class="bg-card border border-subtle rounded-xl p-4 shadow-sm">
+                    <h3 class="text-sm font-medium text-amber-500 mb-2">Total Load by Body Part</h3>
+                    <div class="w-full h-48 relative">
+                        <canvas id="dashboard-load-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Workouts List / Logger View -->
         <div id="workouts-view" class="space-y-6 animate-in fade-in duration-300">
             <div id="admin-client-selector" class="hidden bg-card border border-subtle rounded-lg p-4 shadow-sm">
@@ -386,8 +407,10 @@
         // DOM Elements
         const viewWorkouts = document.getElementById('workouts-view');
         const viewCreator = document.getElementById('creator-view');
+        const viewDashboard = document.getElementById('dashboard-view');
         const tabWorkouts = document.getElementById('tab-workouts');
         const tabCreator = document.getElementById('tab-creator');
+        const tabDashboard = document.getElementById('tab-dashboard');
         const listWorkouts = document.getElementById('workouts-list');
         const activeWorkoutContainer = document.getElementById('active-workout');
         const workoutDisplay = document.getElementById('workout-display');
@@ -448,6 +471,8 @@
                         <button onclick="logout()" class="text-xs text-gray-400 hover:text-white transition-colors">Logout</button>
                     </div>
                 `;
+                
+                tabDashboard.classList.remove('hidden');
 
                 if (isAdmin) {
                     tabCreator.classList.remove('hidden');
@@ -475,7 +500,7 @@
                     
                     // Admin doesn't auto-subscribe until they pick a client
                     workouts = [];
-                    renderWorkoutsList();
+                    switchTab('dashboard');
                 } else {
                     tabCreator.classList.add('hidden');
                     adminClientSelector.classList.add('hidden');
@@ -483,11 +508,13 @@
                     btnEditWorkout.classList.add('hidden');
                     currentViewUid = userEmail;
                     subscribeToWorkouts(userEmail);
+                    switchTab('dashboard');
                 }
             } else {
                 isAdmin = false;
                 currentViewUid = null;
                 tabCreator.classList.add('hidden');
+                tabDashboard.classList.add('hidden');
                 adminClientSelector.classList.add('hidden');
                 btnDeleteWorkout.classList.add('hidden');
                 btnEditWorkout.classList.add('hidden');
@@ -500,7 +527,11 @@
                     unsubscribeWorkouts = null;
                 }
                 workouts = [];
-                renderWorkoutsList();
+                if (!document.getElementById('dashboard-view').classList.contains('hidden')) {
+                    renderDashboard();
+                } else {
+                    renderWorkoutsList();
+                }
                 if (activeWorkoutId) closeWorkout();
             }
         });
@@ -594,7 +625,11 @@
                     unsubscribeWorkouts = null;
                 }
                 workouts = [];
-                renderWorkoutsList();
+                if (!document.getElementById('dashboard-view').classList.contains('hidden')) {
+                    renderDashboard();
+                } else {
+                    renderWorkoutsList();
+                }
                 if (activeWorkoutId) closeWorkout();
             }
         };
@@ -613,6 +648,8 @@
                     } else {
                         renderActiveWorkout();
                     }
+                } else if (!document.getElementById('dashboard-view').classList.contains('hidden')) {
+                    renderDashboard();
                 } else {
                     renderWorkoutsList();
                 }
@@ -625,20 +662,28 @@
 
         // Tab Switching
         window.switchTab = (tab) => {
+            viewWorkouts.classList.add('hidden');
+            viewCreator.classList.add('hidden');
+            viewDashboard.classList.add('hidden');
+            
+            tabWorkouts.classList.replace('tab-active', 'tab-inactive');
+            tabCreator.classList.replace('tab-active', 'tab-inactive');
+            tabDashboard.classList.replace('tab-active', 'tab-inactive');
+
             if (tab === 'workouts') {
                 viewWorkouts.classList.remove('hidden');
-                viewCreator.classList.add('hidden');
                 tabWorkouts.classList.replace('tab-inactive', 'tab-active');
-                tabCreator.classList.replace('tab-active', 'tab-inactive');
                 renderWorkoutsList();
+            } else if (tab === 'dashboard') {
+                viewDashboard.classList.remove('hidden');
+                tabDashboard.classList.replace('tab-inactive', 'tab-active');
+                renderDashboard();
             } else {
                 if (!currentUser) {
                     alert("Please login to create workouts.");
                     return;
                 }
-                viewWorkouts.classList.add('hidden');
                 viewCreator.classList.remove('hidden');
-                tabWorkouts.classList.replace('tab-active', 'tab-inactive');
                 tabCreator.classList.replace('tab-inactive', 'tab-active');
                 if(creatorExercises.length === 0) addCreatorExercise();
             }
@@ -646,6 +691,7 @@
 
         tabWorkouts.onclick = () => switchTab('workouts');
         tabCreator.onclick = () => switchTab('creator');
+        tabDashboard.onclick = () => switchTab('dashboard');
 
         function uuid() { return Math.random().toString(36).substr(2, 9); }
 
@@ -872,6 +918,136 @@
             // Provide visual feedback it's an edit
             document.getElementById('btn-save-workout').innerText = 'Update Workout';
             document.getElementById('c-title').focus();
+        };
+
+        // --- Dashboard Logic ---
+        const bodyPartsMap = {
+            'Chest': ['bench', 'push', 'fly', 'pec', 'chest'],
+            'Back': ['row', 'pull', 'lat', 'chin', 'rear delt', 'back'],
+            'Legs': ['squat', 'leg', 'calf', 'lunge', 'press', 'extension', 'curl', 'glute'],
+            'Shoulders': ['overhead', 'press', 'lateral', 'raise', 'front', 'shoulder', 'delt'],
+            'Arms': ['curl', 'tricep', 'bicep', 'extension', 'pushdown', 'dip', 'skull'],
+            'Core': ['plank', 'crunch', 'sit', 'ab', 'core', 'raise']
+        };
+
+        function getBodyPart(exerciseName) {
+            const name = (exerciseName || '').toLowerCase();
+            for (const [part, keywords] of Object.entries(bodyPartsMap)) {
+                if (keywords.some(k => name.includes(k))) return part;
+            }
+            return 'Other';
+        }
+
+        let loadChartInstance = null;
+
+        window.renderDashboard = () => {
+            const listEl = document.getElementById('dashboard-1rm-list');
+            if (!workouts || workouts.length === 0) {
+                listEl.innerHTML = '<p class="text-subtle">No workout data available.</p>';
+                if (loadChartInstance) {
+                    loadChartInstance.destroy();
+                    loadChartInstance = null;
+                }
+                const chartCanvas = document.getElementById('dashboard-load-chart');
+                if (chartCanvas) {
+                    const ctx = chartCanvas.getContext('2d');
+                    ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+                }
+                return;
+            }
+
+            // Calculate 1RM per exercise and load by body part
+            let exercise1RM = {};
+            let bodyPartLoad = {};
+
+            workouts.forEach(w => {
+                if (w.exercises && w.results) {
+                    w.exercises.forEach(ex => {
+                        const results = w.results[ex.id];
+                        if (Array.isArray(results)) {
+                            const bodyPart = getBodyPart(ex.name);
+                            if (!bodyPartLoad[bodyPart]) bodyPartLoad[bodyPart] = 0;
+
+                            results.forEach(set => {
+                                const weight = parseFloat(set.weight) || 0;
+                                const reps = parseInt(set.reps) || 0;
+                                
+                                // Volume for part load
+                                bodyPartLoad[bodyPart] += (weight * reps);
+
+                                // 1RM estimate
+                                const est1RM = reps === 1 ? weight : weight * (1 + reps / 30);
+                                if (est1RM > 0) {
+                                    if (!exercise1RM[ex.name] || est1RM > exercise1RM[ex.name]) {
+                                        exercise1RM[ex.name] = est1RM;
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+
+            // Top Exercises by 1RM
+            const sorted1RM = Object.entries(exercise1RM)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+
+            if (sorted1RM.length > 0) {
+                listEl.innerHTML = sorted1RM.map(([name, val]) => `
+                    <div class="flex justify-between border-b border-subtle pb-1">
+                        <span class="text-gray-300 truncate pr-2">${name}</span>
+                        <span class="text-amber-400 font-bold">${Math.round(val)}<span class="text-[10px] text-gray-500 ml-1">kg/lbs</span></span>
+                    </div>
+                `).join('');
+            } else {
+                listEl.innerHTML = '<p class="text-subtle">No data logged yet.</p>';
+            }
+
+            // Bar Chart for Body Parts
+            const chartCanvas = document.getElementById('dashboard-load-chart');
+            if (!chartCanvas) return;
+            const ctx = chartCanvas.getContext('2d');
+            
+            if (loadChartInstance) {
+                loadChartInstance.destroy();
+            }
+
+            const parts = Object.keys(bodyPartLoad);
+            const loads = Object.values(bodyPartLoad);
+
+            loadChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: parts,
+                    datasets: [{
+                        label: 'Total Volume',
+                        data: loads,
+                        backgroundColor: 'rgba(139, 92, 246, 0.6)',
+                        borderColor: '#A78BFA',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: 'rgba(255,255,255,0.5)' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: 'rgba(255,255,255,0.5)' }
+                        }
+                    }
+                }
+            });
         };
 
         // --- Workouts List & Logger Logic ---
@@ -1133,8 +1309,8 @@
                                         <button onclick="showExerciseHistory('${ex.name.replace(/'/g, "\\'")}')" class="hover:text-white transition-colors" title="History">
                                             <i class="fas fa-history"></i>
                                         </button>
-                                        <button onclick="showExerciseGif('${ex.name.replace(/'/g, "\\'")}')" class="hover:text-amber-500 transition-colors" title="Watch Demo">
-                                            <i class="fas fa-play-circle"></i>
+                                        <button onclick="showExerciseGif('${ex.name.replace(/'/g, "\\'")}')" class="text-amber-500 hover:text-amber-400 transition-colors flex items-center gap-1" title="Watch Demo">
+                                            <i class="fas fa-play-circle"></i> <span class="text-xs underline">Watch Demo</span>
                                         </button>
                                     </div>
                                 </div>

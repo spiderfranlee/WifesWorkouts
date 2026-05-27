@@ -7,7 +7,7 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isAuthenticated() && request.auth.token.email == 'franny.lee@gmail.com';
+      return isAuthenticated() && (request.auth.token.email == 'franny.lee@gmail.com' || request.auth.uid == 'eD4wKO4EIxQ3CAHzdx6q9N2s4Jf2');
     }
 
     function isOwner(emailId) {
@@ -23,7 +23,7 @@ service cloud.firestore {
     }
     
     match /workoutTemplates/{templateId} {
-      allow read, write: if isAdmin();
+      allow read, write: if request.auth != null;
     }
     
     // Allow the connection test to succeed for anyone
